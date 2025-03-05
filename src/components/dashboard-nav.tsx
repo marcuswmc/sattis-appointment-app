@@ -82,7 +82,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
       <div className="px-2">
         <Button
           variant="ghost"
-          className="w-full justify-start text-muted-foreground hover:bg-gray-200 hover:text-foreground"
+          className="w-full justify-start text-muted-foreground hover:bg-gray-200 hover:text-foreground cursor-pointer"
           onClick={() => signOut({ callbackUrl: "/login" })}
         >
           <LogOut className="mr-2 h-5 w-5" />
