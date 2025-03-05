@@ -17,7 +17,6 @@ import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAppointments } from "@/hooks/appointments-context";
 
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -177,7 +176,9 @@ export function AppointmentList({ token }: AppointmentListProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="p-2 bg-accent rounded-md inline">{appointment.time}</div>
+                    <div className="p-2 bg-accent rounded-md inline">
+                      {appointment.time}
+                    </div>
                   </TableCell>
                   <TableCell
                     className="truncate"
@@ -228,90 +229,107 @@ export function AppointmentList({ token }: AppointmentListProps) {
         </Table>
       </div>
 
-      {/* Versão para telas menores (layout em cards) */}
       <div className="md:hidden space-y-4">
-      {filteredAppointments.length > 0 ? (
-        filteredAppointments.map((appointment) => (
-          <Card key={appointment._id} className="border border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">
-                {appointment.serviceId.name}
-                <div className="flex gap-2">
-                  <p className="text-sm font-medium text-gray-500">Profissional:</p>
-                  <p className="text-sm">{appointment.professionalId.name}</p>
+        {filteredAppointments.length > 0 ? (
+          filteredAppointments.map((appointment) => (
+            <Card key={appointment._id} className="border border-gray-200">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">
+                  {appointment.serviceId.name}
+                  <div className="flex gap-2 mt-2">
+                    <p className="text-sm font-medium text-gray-500">
+                      Profissional:
+                    </p>
+                    <p className="text-sm">{appointment.professionalId.name}</p>
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <div className="flex gap-2">
+                      <p className="text-sm font-medium text-gray-500">Data</p>
+                      <p className="text-sm">{formatDate(appointment.date)}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <p className="text-sm font-medium text-gray-500">Hora</p>
+                      <p className="text-sm">{appointment.time}</p>
+                    </div>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-2 mb-3">
+                  
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">
+                        Cliente
+                      </p>
+                      <p>{appointment.customerName}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">
+                        Telefone
+                      </p>
+                      <p>{appointment.customerPhone}</p>
+                    </div>
+                  </div>
                 </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-2 mb-3">
-              <div>
-                  <p className="text-sm font-medium text-gray-500">Data</p>
-                  <p>{formatDate(appointment.date)}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Hora</p>
-                  <p>{appointment.time}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Cliente</p>
-                  <p>{appointment.customerName}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Telefone</p>
-                  <p>{appointment.customerPhone}</p>
-                </div>
-                
-              </div>
-              <div className="mt-4 flex justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex items-center gap-1"
-                  onClick={() => handleCancelClick(appointment._id)}
-                >
-                  <X className="h-4 w-4" />
-                  Cancelar
-                </Button>
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={() => handleCancelClick(appointment._id)}
+                  >
+                    <X className="h-4 w-4" />
+                    Cancelar
+                  </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 bg-gray-950 text-gray-50"
-                  onClick={() => updateAppointmentStatus(appointment._id, "FINISHED")}
-                >
-                  <Check className="h-4 w-4" />
-                  Finalizar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          Nenhum agendamento encontrado.
-        </div>
-      )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1 bg-gray-950 text-gray-50"
+                    onClick={() =>
+                      updateAppointmentStatus(appointment._id, "FINISHED")
+                    }
+                  >
+                    <Check className="h-4 w-4" />
+                    Finalizar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhum agendamento encontrado.
+          </div>
+        )}
 
-      {/* Modal de confirmação para cancelar */}
-      <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar Agendamento</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja cancelar este agendamento?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsModalOpen(false)} className="cursor-pointer">
-              Manter agendamento
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmCancel} className="cursor-pointer">
-              Sim, cancelar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        {/* Modal de confirmação para cancelar */}
+        <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancelar Agendamento</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja cancelar este agendamento?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={() => setIsModalOpen(false)}
+                className="cursor-pointer"
+              >
+                Manter agendamento
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmCancel}
+                className="cursor-pointer"
+              >
+                Sim, cancelar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }
