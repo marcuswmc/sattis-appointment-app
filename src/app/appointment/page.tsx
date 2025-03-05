@@ -4,10 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Professional, Service, useAppointments } from "@/hooks/appointments-context";
+import {
+  Professional,
+  Service,
+  useAppointments,
+} from "@/hooks/appointments-context";
 import { toast } from "sonner";
 import Image from "next/image";
 import logo from "@/public/sattis-logo.png";
+import { Loader2 } from "lucide-react";
 
 const AppointmentForm = () => {
   const {
@@ -20,7 +25,9 @@ const AppointmentForm = () => {
 
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<string>("");
-  const [availableProfessionals, setAvailableProfessionals] = useState<Professional[]>([]);
+  const [availableProfessionals, setAvailableProfessionals] = useState<
+    Professional[]
+  >([]);
   const [selectedProfessional, setSelectedProfessional] = useState<string>("");
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -31,13 +38,13 @@ const AppointmentForm = () => {
     date: "",
   });
 
-  // Carrega serviços, profissionais e agendamentos na montagem do componente
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     fetchServicesAndProfessionals(undefined);
     fetchAppointments(undefined);
   }, [fetchServicesAndProfessionals, fetchAppointments]);
 
-  // Filtra profissionais para o serviço selecionado
   useEffect(() => {
     if (selectedService) {
       const professionalsForService = professionals.filter((pro) =>
@@ -47,7 +54,6 @@ const AppointmentForm = () => {
     }
   }, [selectedService, professionals]);
 
-  // Quando a data for escolhida, filtra os horários disponíveis com base nos agendamentos já confirmados
   useEffect(() => {
     if (selectedService && formData.date) {
       const service = services.find((s) => s._id === selectedService);
@@ -71,6 +77,7 @@ const AppointmentForm = () => {
   }, [selectedService, formData.date, services, appointments]);
 
   const handleSubmit = async () => {
+    setLoading(true);
     const payload = {
       ...formData,
       serviceId: selectedService,
@@ -97,6 +104,8 @@ const AppointmentForm = () => {
     } catch (error) {
       console.error("Erro ao agendar:", error);
       toast("Erro ao agendar. Tente novamente!");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -107,7 +116,9 @@ const AppointmentForm = () => {
       </div>
       <div className="flex flex-col items-center">
         <h2 className="text-2xl font-medium">Sattis Studio</h2>
-        <p className="text-foreground">Olá, faça seu apontamento</p>
+        <p className="text-sm text-foreground">
+          Olá, escolha um serviço e faça sua marcação
+        </p>
       </div>
 
       {/* Step 1: Escolha do Serviço */}
@@ -117,12 +128,14 @@ const AppointmentForm = () => {
             <CardTitle>Escolha um serviço</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               {services.map((service: Service) => (
                 <Button
                   key={service._id}
                   variant="outline"
-                  className={`${selectedService === service._id ? "bg-gray-300" : ""}`}
+                  className={`${
+                    selectedService === service._id ? "bg-gray-300" : ""
+                  }`}
                   onClick={() => setSelectedService(service._id)}
                 >
                   {service.name}
@@ -130,7 +143,7 @@ const AppointmentForm = () => {
               ))}
             </div>
             <Button
-              className="mt-6 w-full"
+              className="mt-10 w-full"
               onClick={() => setStep(2)}
               disabled={!selectedService}
             >
@@ -147,12 +160,14 @@ const AppointmentForm = () => {
             <CardTitle>Escolha um profissional</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               {availableProfessionals.map((pro) => (
                 <Button
                   key={pro._id}
                   variant="outline"
-                  className={`${selectedProfessional === pro._id ? "bg-gray-300" : ""}`}
+                  className={`${
+                    selectedProfessional === pro._id ? "bg-gray-300" : ""
+                  }`}
                   onClick={() => setSelectedProfessional(pro._id)}
                 >
                   {pro.name}
@@ -160,7 +175,7 @@ const AppointmentForm = () => {
               ))}
             </div>
             <Button
-              className="mt-6 w-full"
+              className="mt-10 w-full"
               onClick={() => setStep(3)}
               disabled={!selectedProfessional}
             >
@@ -192,7 +207,7 @@ const AppointmentForm = () => {
                 setFormData({ ...formData, date: e.target.value })
               }
             />
-            <div className="grid grid-cols-3 gap-2 mt-4">
+            <div className="grid grid-cols-3 gap-3 mt-4">
               {availableTimes.length > 0 ? (
                 availableTimes.map((time) => (
                   <Button
@@ -205,11 +220,13 @@ const AppointmentForm = () => {
                   </Button>
                 ))
               ) : (
-                <p className="col-span-3 text-sm text-muted-foreground">Nenhum horário disponível para esta data.</p>
+                <p className="col-span-3 text-sm text-muted-foreground">
+                  Nenhum horário disponível para esta data.
+                </p>
               )}
             </div>
             <Button
-              className="mt-4 w-full"
+              className="mt-10 w-full"
               onClick={() => setStep(4)}
               disabled={!selectedTime || !formData.date}
             >
@@ -259,8 +276,12 @@ const AppointmentForm = () => {
                 }
               />
             </div>
-            <Button className="mt-4 w-full" onClick={handleSubmit}>
-              Confirmar Agendamento
+            <Button className="mt-10 w-full" onClick={handleSubmit}>
+              {loading ? (
+                <Loader2 className="h-10 w-10 animate-spin text-gray-50" />
+              ) : (
+                "Confirmar Marcação"
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -277,14 +298,17 @@ const AppointmentForm = () => {
       {step === 5 && (
         <Card>
           <CardHeader>
-            <CardTitle>Agendamento Confirmado! 🎉</CardTitle>
+            <CardTitle className="text-lg">Marcação Confirmada! 🎉</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-2">
+            <p className="text-sm mb-2">Resumo da marcação:</p>
             <p>
-              <strong>Serviço:</strong>{" "}{services.find((s) => s._id === selectedService)?.name}
+              <strong>Serviço:</strong>{" "}
+              {services.find((s) => s._id === selectedService)?.name}
             </p>
             <p>
-              <strong>Profissional:</strong>{" "}{professionals.find((p) => p._id === selectedProfessional)?.name}
+              <strong>Profissional:</strong>{" "}
+              {professionals.find((p) => p._id === selectedProfessional)?.name}
             </p>
             <p>
               <strong>Data:</strong> {formData.date}
@@ -301,8 +325,8 @@ const AppointmentForm = () => {
             <p>
               <strong>Telefone:</strong> {formData.customerPhone}
             </p>
-            <Button className="mt-4 w-full" onClick={() => setStep(1)}>
-              Novo Agendamento
+            <Button className="mt-10 w-full" onClick={() => setStep(1)}>
+              Nova Marcação
             </Button>
           </CardContent>
         </Card>
