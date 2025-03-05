@@ -5,7 +5,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/auth-provider";
 import { AppointmentsProvider } from "@/hooks/appointments-context";
-
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,13 +21,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>
-        <AuthProvider>
-          <AppointmentsProvider>
+      <body className={`${inter.className}`}>
+        <Suspense>
+          <AuthProvider>
+            <AppointmentsProvider>
               {children}
               <Toaster />
-          </AppointmentsProvider>
-        </AuthProvider>
+            </AppointmentsProvider>
+          </AuthProvider>
+        </Suspense>
       </body>
     </html>
   );

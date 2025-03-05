@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import HistoryList from "@/components/history-list";
 
 import { HistoryFilters } from "@/components/history-filters";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function HistorPage() {
   const session = await auth();
@@ -18,9 +20,29 @@ export default async function HistorPage() {
         <div>
           <HistoryFilters />
         </div>
-        <HistoryList token={session?.user.accessToken} />
+        <Suspense fallback={<HistoryListSkeleton />}>
+          <HistoryList token={session?.user.accessToken} />
+        </Suspense>
       </div>
-      
     </>
+  );
+}
+
+function HistoryListSkeleton() {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="rounded-lg border p-4">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-full" />
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

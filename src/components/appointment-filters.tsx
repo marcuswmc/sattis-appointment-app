@@ -109,7 +109,7 @@ export function AppointmentFilters() {
       </Popover>
 
       <Select value={service} onValueChange={setService}>
-        <SelectTrigger className="w-full md:w-auto cursor-pointer focus:outline-none">
+        <SelectTrigger className="w-full md:w-auto cursor-pointer focus:outline-hidden">
           <SelectValue placeholder="Serviço" />
         </SelectTrigger>
         <SelectContent>

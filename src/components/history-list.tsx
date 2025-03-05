@@ -113,7 +113,7 @@ export default function HistoryList({token }: HistoryPageProps) {
       <div className="md:hidden space-y-4">
         {sortedAppointments.length > 0 ? (
           sortedAppointments.map((appointment) => (
-            <div key={appointment._id} className="bg-white rounded-lg shadow p-4 border border-gray-200">
+            <div key={appointment._id} className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Serviço</p>
