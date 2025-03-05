@@ -62,9 +62,10 @@ export function RegisterDialog({ open, onOpenChange }: RegisterDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Criação de Conta</DialogTitle>
+          <DialogTitle>Crie a sua conta</DialogTitle>
+          <p>Preencha os campos para criar uma conta de acesso profissional ao sistema</p>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input
@@ -99,7 +100,7 @@ export function RegisterDialog({ open, onOpenChange }: RegisterDialogProps) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleRegister} disabled={isLoading}>
+          <Button variant="default" onClick={handleRegister} disabled={isLoading}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Criar Conta"}
           </Button>
         </DialogFooter>

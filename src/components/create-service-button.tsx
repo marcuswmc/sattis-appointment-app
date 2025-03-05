@@ -12,7 +12,7 @@ export function CreateServiceButton() {
     <>
       <Button onClick={() => setOpen(true)} className="flex items-center gap-1">
         <Plus className="h-4 w-4" />
-        Novo serviço
+        Add
       </Button>
 
       <CreateServiceDialog open={open} onOpenChange={setOpen} />

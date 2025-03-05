@@ -16,8 +16,8 @@ export default async function ProfessionalsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Profissionais</h1>
-          <p className="text-muted-foreground">Gerencie os profissionais do salão</p>
+          <h2 className="text-2xl font-bold tracking-tight">Profissionais</h2>
+          <p className="text-muted-foreground">Gerencie todos os profissionais</p>
         </div>
         <CreateProfessionalButton />
       </div>

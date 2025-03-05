@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -13,8 +14,9 @@ import {
 } from "@/components/ui/table";
 import { Check, X, Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { toast } from "sonner"
+import { toast } from "sonner";
 import { useAppointments } from "@/hooks/appointments-context";
+
 
 import {
   AlertDialog,
@@ -35,7 +37,6 @@ export function AppointmentList({ token }: AppointmentListProps) {
   const searchParams = useSearchParams();
   const { appointments, isLoading, fetchAppointments, setAppointments } =
     useAppointments();
-
 
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<
     string | null
@@ -78,9 +79,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
     try {
       console.log("Atualizando status do agendamento ID:", id);
       const response = await fetch(
-        `${
-            process.env.NEXT_PUBLIC_API_URL
-          }/appointment/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/appointment/${id}`,
         {
           method: "PATCH",
           headers: {
@@ -95,29 +94,27 @@ export function AppointmentList({ token }: AppointmentListProps) {
         setAppointments((prev) =>
           prev.filter((appointment) => appointment._id !== id)
         );
-        toast("Status atualizado", { 
+        toast("Status atualizado", {
           description: `Agendamento ${
             status === "FINISHED" ? "finalizado" : "cancelado"
           } com sucesso`,
         });
       } else {
         toast.error("Erro ao atualizar", {
-         description: "Não foi possível atualizar o status",
+          description: "Não foi possível atualizar o status",
         });
       }
     } catch (error) {
       toast.error("Erro ao atualizar", {
         description: "Não foi possível atualizar o status",
-       });
+      });
     }
   };
-
 
   const handleCancelClick = (id: string) => {
     setSelectedAppointmentId(id);
     setIsModalOpen(true);
   };
-
 
   const handleConfirmCancel = async () => {
     if (selectedAppointmentId) {
@@ -144,10 +141,10 @@ export function AppointmentList({ token }: AppointmentListProps) {
             <TableRow>
               <TableHead className="w-1/6">Serviço</TableHead>
               <TableHead className="w-1/6">Profissional</TableHead>
+              <TableHead className="w-1/6">Data</TableHead>
+              <TableHead className="w-1/6">Hora</TableHead>
               <TableHead className="w-1/6">Cliente</TableHead>
-              <TableHead className="w-1/12">Tel</TableHead>
-              <TableHead className="w-1/12">Data</TableHead>
-              <TableHead className="w-1/12">Hora</TableHead>
+              <TableHead className="w-1/6">Tel</TableHead>
               <TableHead className="w-1/6">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -162,16 +159,28 @@ export function AppointmentList({ token }: AppointmentListProps) {
                     className="truncate max-w-xs"
                     title={appointment.serviceId.name}
                   >
-                    {appointment.serviceId.name}
+                    <div className="p-2 bg-accent rounded-md inline">
+                      {appointment.serviceId.name}
+                    </div>
                   </TableCell>
                   <TableCell
-                    className="truncate max-w-xs"
+                    className="whitespace-nowrap max-w-xs"
                     title={appointment.professionalId.name}
                   >
-                    {appointment.professionalId.name}
+                    <div className="p-2 bg-accent rounded-md inline">
+                      {appointment.professionalId.name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <div className="p-2 bg-accent rounded-md inline">
+                      {formatDate(appointment.date)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="p-2 bg-accent rounded-md inline">{appointment.time}</div>
                   </TableCell>
                   <TableCell
-                    className="truncate max-w-xs"
+                    className="truncate"
                     title={appointment.customerName}
                   >
                     {appointment.customerName}
@@ -179,14 +188,10 @@ export function AppointmentList({ token }: AppointmentListProps) {
                   <TableCell className="truncate">
                     {appointment.customerPhone}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(appointment.date)}
-                  </TableCell>
-                  <TableCell>{appointment.time}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button
-                        variant="outline"
+                        variant="default"
                         size="sm"
                         className="flex items-center gap-1"
                         onClick={() =>
@@ -225,22 +230,27 @@ export function AppointmentList({ token }: AppointmentListProps) {
 
       {/* Versão para telas menores (layout em cards) */}
       <div className="md:hidden space-y-4">
-        {filteredAppointments.length > 0 ? (
-          filteredAppointments.map((appointment) => (
-            <div
-              key={appointment._id}
-              className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
-            >
+      {filteredAppointments.length > 0 ? (
+        filteredAppointments.map((appointment) => (
+          <Card key={appointment._id} className="border border-gray-200">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                {appointment.serviceId.name}
+                <div className="flex gap-2">
+                  <p className="text-sm font-medium text-gray-500">Profissional:</p>
+                  <p className="text-sm">{appointment.professionalId.name}</p>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Serviço</p>
-                  <p className="font-medium">{appointment.serviceId.name}</p>
+              <div>
+                  <p className="text-sm font-medium text-gray-500">Data</p>
+                  <p>{formatDate(appointment.date)}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">
-                    Profissional
-                  </p>
-                  <p>{appointment.professionalId.name}</p>
+                  <p className="text-sm font-medium text-gray-500">Hora</p>
+                  <p>{appointment.time}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Cliente</p>
@@ -250,14 +260,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
                   <p className="text-sm font-medium text-gray-500">Telefone</p>
                   <p>{appointment.customerPhone}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Data</p>
-                  <p>{formatDate(appointment.date)}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Hora</p>
-                  <p>{appointment.time}</p>
-                </div>
+                
               </div>
               <div className="mt-4 flex justify-end gap-2">
                 <Button
@@ -274,22 +277,20 @@ export function AppointmentList({ token }: AppointmentListProps) {
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-1 bg-gray-950 text-gray-50"
-                  onClick={() =>
-                    updateAppointmentStatus(appointment._id, "FINISHED")
-                  }
+                  onClick={() => updateAppointmentStatus(appointment._id, "FINISHED")}
                 >
                   <Check className="h-4 w-4" />
                   Finalizar
                 </Button>
               </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            Nenhum agendamento encontrado.
-          </div>
-        )}
-      </div>
+            </CardContent>
+          </Card>
+        ))
+      ) : (
+        <div className="text-center py-8 text-muted-foreground">
+          Nenhum agendamento encontrado.
+        </div>
+      )}
 
       {/* Modal de confirmação para cancelar */}
       <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -310,6 +311,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
     </div>
   );
 }

@@ -160,7 +160,7 @@ export function AppointmentFilters() {
             <SheetHeader>
               <SheetTitle>Filtros</SheetTitle>
             </SheetHeader>
-            <div className="mt-4">{FiltersContent}</div>
+            <div className="mt-2">{FiltersContent}</div>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onClick={clearFilters}>
                 <X className="h-6 w-6" />

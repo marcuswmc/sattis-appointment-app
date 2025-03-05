@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Loader2, Edit, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { EditServiceDialog } from "@/components/edit-service-dialog";
-import { useAppointments } from "@/hooks/appointments-context"; 
+import { useAppointments } from "@/hooks/appointments-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,14 +19,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface Service {
-  _id: string
-  name: string
-  description: string
-  price: number
-  duration: number
-  availableTimes: string[]
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
+  availableTimes: string[];
 }
 
 interface ServiceListProps {
@@ -34,8 +41,15 @@ interface ServiceListProps {
 }
 
 export function ServiceList({ token }: ServiceListProps) {
-  const { services, isLoading, fetchServicesAndProfessionals, setAppointments, fetchAppointments } = useAppointments();
+  const {
+    services,
+    isLoading,
+    fetchServicesAndProfessionals,
+    setAppointments,
+    fetchAppointments,
+  } = useAppointments();
   const [serviceToEdit, setServiceToEdit] = useState<Service | null>(null);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isDeleteLoading, setIsDeleteLoading] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,27 +63,35 @@ export function ServiceList({ token }: ServiceListProps) {
     setIsDeleteLoading(id);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/service/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/service/${id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (response.ok) {
         setAppointments((prev) => ({
           ...prev,
           services: prev.filter((service) => service._id !== id),
         }));
-        toast("Serviço excluído", { description: "O serviço foi excluído com sucesso" });
+        toast("Serviço excluído", {
+          description: "O serviço foi excluído com sucesso",
+        });
       } else {
-        toast.error("Erro ao excluir serviço", { description: "Não foi possível excluir o serviço" });
+        toast.error("Erro ao excluir serviço", {
+          description: "Não foi possível excluir o serviço",
+        });
       }
     } catch (error) {
-      toast.error("Erro ao excluir serviço", { description: "Ocorreu um erro ao excluir o serviço" });
+      toast.error("Erro ao excluir serviço", {
+        description: "Ocorreu um erro ao excluir o serviço",
+      });
     } finally {
       setIsDeleteLoading(null);
     }
   };
-
 
   if (isLoading) {
     return (
@@ -83,7 +105,9 @@ export function ServiceList({ token }: ServiceListProps) {
     return (
       <Card className="flex flex-col items-center justify-center p-6 text-center">
         <h3 className="text-lg font-medium">Nenhum serviço encontrado</h3>
-        <p className="text-muted-foreground">Clique no botão "Novo serviço" para adicionar um serviço</p>
+        <p className="text-muted-foreground">
+          Clique no botão "Novo serviço" para adicionar um serviço
+        </p>
       </Card>
     );
   }
@@ -97,7 +121,11 @@ export function ServiceList({ token }: ServiceListProps) {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">{service.name}</h3>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => setServiceToEdit(service)}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setServiceToEdit(service)}
+                  >
                     <Edit className="h-4 w-4" />
                     <span className="sr-only">Editar</span>
                   </Button>
@@ -113,7 +141,8 @@ export function ServiceList({ token }: ServiceListProps) {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Excluir serviço</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.
+                          Tem certeza que deseja excluir este serviço? Esta ação
+                          não pode ser desfeita.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -122,7 +151,9 @@ export function ServiceList({ token }: ServiceListProps) {
                           onClick={() => handleDeleteService(service._id)}
                           disabled={isDeleteLoading === service._id}
                         >
-                          {isDeleteLoading === service._id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          {isDeleteLoading === service._id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
                           Excluir
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -131,17 +162,50 @@ export function ServiceList({ token }: ServiceListProps) {
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground">{service.description}</p>
+              <p className="text-sm text-muted-foreground">
+                {service.description}
+              </p>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm truncate">
                 <div>
-                  <span className="font-medium">Preço:</span> {formatCurrency(service.price)}
+                  <span className="font-medium">Preço:</span>{" "}
+                  {formatCurrency(service.price)}
                 </div>
                 <div>
-                  <span className="font-medium">Duração:</span> {service.duration} minutos
+                  <span className="font-medium">Duração:</span>{" "}
+                  {service.duration} minutos
                 </div>
-                <div>
-                  <span className="font-medium">Horários disponíveis:</span> {service.availableTimes.join(", ")}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                  <div>
+                    <span className="font-medium">Horários disponíveis:</span>{" "}
+                    {service.availableTimes.slice(0, 4).join(", ")}
+                  </div>
+
+                  {service.availableTimes.length > 4 && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="block w-full text-right"
+                        >
+                          Ver todos os horários
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Horários disponíveis</DialogTitle>
+                        </DialogHeader>
+                        <ul className="space-y-2">
+                          {service.availableTimes.map((time) => (
+                            <li key={time} className="text-sm">
+                              {time}
+                            </li>
+                          ))}
+                        </ul>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                 </div>
               </div>
             </div>

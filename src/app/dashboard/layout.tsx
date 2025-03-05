@@ -52,7 +52,7 @@ export default async function DashboardLayout({
           </Sidebar>
           <main className="flex-1 overflow-auto p-4 md:p-6 w-full">
             <div className="flex h-14 items-center gap-2 md:hidden justify-between">
-              <SidebarTrigger/>
+              <SidebarTrigger className="hover:bg-primary hover:text-accent cursor-pointer"/>
               <div className="flex items-center gap-2">
                 <div className="flex flex-col items-end">
                   <h2 className="text-sm font-bold">Sattis Studio</h2>

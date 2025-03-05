@@ -17,7 +17,7 @@ export default async function ServicesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Serviços</h1>
-          <p className="text-muted-foreground">Gerencie os serviços oferecidos pelo salão</p>
+          <p className="text-muted-foreground">Gerencie todos os serviço</p>
         </div>
         <CreateServiceButton />
       </div>

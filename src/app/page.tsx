@@ -12,5 +12,5 @@ export default async function Home() {
 
   redirect("/dashboard/appointments");
 
-  return null; // Evita erro de retorno de JSX
+  return null;
 }

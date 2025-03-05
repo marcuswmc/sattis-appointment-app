@@ -52,10 +52,10 @@ export function LoginForm() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>Entre com suas credenciais para acessar o sistema</CardDescription>
+          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardDescription>Entre com suas credenciais ou crie uma conta de profissional para aceder ao sistema</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

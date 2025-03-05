@@ -12,7 +12,7 @@ export function CreateProfessionalButton() {
     <>
       <Button onClick={() => setOpen(true)} className="flex items-center gap-1">
         <Plus className="h-4 w-4" />
-        Novo profissional
+        Add
       </Button>
 
       <CreateProfessionalDialog open={open} onOpenChange={setOpen} />
