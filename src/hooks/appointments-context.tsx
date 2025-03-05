@@ -61,10 +61,9 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const searchParams = useSearchParams();
 
-  // Busca de agendamentos
+  // Função para buscar os agendamentos
   const fetchAppointments = useCallback(
     async (token: string | undefined, statuses?: string[]) => {
-      if (!token) return;
       setIsLoading(true);
       try {
         const params = new URLSearchParams();
@@ -80,10 +79,15 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         if (service) params.set("service", service);
         if (professional) params.set("professional", professional);
 
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;  // Adiciona o token se houver
+        }
+
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/appointments?${params.toString()}`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers,
           }
         );
 
@@ -102,14 +106,17 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
     [searchParams]
   );
 
-  // Busca de serviços e profissionais
-  const fetchServicesAndProfessionals = useCallback(async (token: string | undefined) => {
-    if (!token) return;
+  // Função para buscar os serviços e profissionais
+  const fetchServicesAndProfessionals = useCallback(async (token?: string) => {
     setIsLoading(true);
     try {
-      // Busca serviços
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const servicesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/services`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers,
       });
 
       if (servicesResponse.ok) {
@@ -119,9 +126,8 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         console.error("Erro ao carregar serviços");
       }
 
-      // Busca profissionais
       const professionalsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/professionals`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers,
       });
 
       if (professionalsResponse.ok) {
