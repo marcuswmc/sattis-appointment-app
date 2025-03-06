@@ -106,7 +106,7 @@ export function ServiceList({ token }: ServiceListProps) {
       <Card className="flex flex-col items-center justify-center p-6 text-center">
         <h3 className="text-lg font-medium">Nenhum serviço encontrado</h3>
         <p className="text-muted-foreground">
-          Clique no botão "Novo serviço" para adicionar um serviço
+          Clique no botão "+ Add" para adicionar um serviço
         </p>
       </Card>
     );
@@ -187,9 +187,9 @@ export function ServiceList({ token }: ServiceListProps) {
                         <Button
                           variant="link"
                           size="sm"
-                          className="block w-full text-right"
+                          className="block text-right"
                         >
-                          Ver todos os horários
+                          Ver todos
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
