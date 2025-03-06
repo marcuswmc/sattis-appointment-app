@@ -52,7 +52,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
 
   let filteredAppointments = appointments.filter(
     (appointment) => appointment.status === "CONFIRMED"
-  );
+  ).reverse();
 
   if (filterDate) {
     filteredAppointments = filteredAppointments.filter(
