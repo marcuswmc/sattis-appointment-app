@@ -41,8 +41,6 @@ export function EditServiceDialog({ service, token, open, onOpenChange, onSucces
   const [description, setDescription] = useState(service.description)
   const [price, setPrice] = useState(service.price.toString())
   const [duration, setDuration] = useState(service.duration.toString())
-  const [availableTimes, setAvailableTimes] = useState<string[]>(service.availableTimes)
-  const [newTime, setNewTime] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -51,20 +49,9 @@ export function EditServiceDialog({ service, token, open, onOpenChange, onSucces
       setDescription(service.description)
       setPrice(service.price.toString())
       setDuration(service.duration.toString())
-      setAvailableTimes(service.availableTimes)
     }
   }, [service])
 
-  const handleAddTime = () => {
-    if (newTime && !availableTimes.includes(newTime)) {
-      setAvailableTimes([...availableTimes, newTime])
-      setNewTime("")
-    }
-  }
-
-  const handleRemoveTime = (time: string) => {
-    setAvailableTimes(availableTimes.filter((t) => t !== time))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,7 +72,6 @@ export function EditServiceDialog({ service, token, open, onOpenChange, onSucces
           description,
           price: Number.parseFloat(price),
           duration: Number.parseInt(duration),
-          availableTimes,
         }),
       })
 
@@ -159,33 +145,6 @@ export function EditServiceDialog({ service, token, open, onOpenChange, onSucces
                 onChange={(e) => setDuration(e.target.value)}
                 required
               />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Horários disponíveis</Label>
-            <div className="flex items-center gap-2">
-              <Input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} />
-              <Button type="button" variant="outline" size="icon" onClick={handleAddTime}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap gap-2 pt-2">
-              {availableTimes.map((time) => (
-                <div key={time} className="flex items-center rounded-md bg-secondary px-2 py-1 text-sm">
-                  {time}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="ml-1 h-4 w-4 cursor-pointer"
-                    onClick={() => handleRemoveTime(time)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
             </div>
           </div>
 

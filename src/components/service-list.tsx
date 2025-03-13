@@ -51,6 +51,8 @@ export function ServiceList({ token }: ServiceListProps) {
   const [serviceToEdit, setServiceToEdit] = useState<Service | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isDeleteLoading, setIsDeleteLoading] = useState<string | null>(null);
+  
+  console.log(services)
 
   useEffect(() => {
     fetchServicesAndProfessionals(token);
@@ -174,38 +176,6 @@ export function ServiceList({ token }: ServiceListProps) {
                 <div>
                   <span className="font-medium">Duração:</span>{" "}
                   {service.duration} minutos
-                </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                  <div>
-                    <span className="font-medium">Horários disponíveis:</span>{" "}
-                    {service.availableTimes.slice(0, 4).join(", ")}
-                  </div>
-
-                  {service.availableTimes.length > 4 && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="block text-right"
-                        >
-                          Ver todos
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Horários disponíveis</DialogTitle>
-                        </DialogHeader>
-                        <ul className="space-y-2">
-                          {service.availableTimes.map((time) => (
-                            <li key={time} className="text-sm">
-                              {time}
-                            </li>
-                          ))}
-                        </ul>
-                      </DialogContent>
-                    </Dialog>
-                  )}
                 </div>
               </div>
             </div>

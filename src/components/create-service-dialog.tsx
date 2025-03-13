@@ -31,20 +31,9 @@ export function CreateServiceDialog({ open, onOpenChange }: CreateServiceDialogP
   const [description, setDescription] = useState("")
   const [price, setPrice] = useState("")
   const [duration, setDuration] = useState("")
-  const [availableTimes, setAvailableTimes] = useState<string[]>(["08:00", "09:00", "10:00"])
-  const [newTime, setNewTime] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleAddTime = () => {
-    if (newTime && !availableTimes.includes(newTime)) {
-      setAvailableTimes([...availableTimes, newTime])
-      setNewTime("")
-    }
-  }
 
-  const handleRemoveTime = (time: string) => {
-    setAvailableTimes(availableTimes.filter((t) => t !== time))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,7 +54,6 @@ export function CreateServiceDialog({ open, onOpenChange }: CreateServiceDialogP
           description,
           price: Number.parseFloat(price),
           duration: Number.parseInt(duration),
-          availableTimes,
         }),
       })
 
@@ -79,9 +67,6 @@ export function CreateServiceDialog({ open, onOpenChange }: CreateServiceDialogP
         setDescription("")
         setPrice("")
         setDuration("")
-        setAvailableTimes(["08:00", "09:00", "10:00"])
-        setNewTime("")
-
 
         onOpenChange(false)
 
@@ -148,34 +133,6 @@ export function CreateServiceDialog({ open, onOpenChange }: CreateServiceDialogP
               />
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label>Horários disponíveis</Label>
-            <div className="flex items-center gap-2">
-              <Input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} />
-              <Button type="button" variant="outline" size="icon" onClick={handleAddTime}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap gap-2 pt-2">
-              {availableTimes.map((time) => (
-                <div key={time} className="flex items-center rounded-md border bg-secondary px-2 py-1 text-sm">
-                  {time}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="ml-1 h-4 w-4"
-                    onClick={() => handleRemoveTime(time)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <DialogFooter className="pt-4">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancelar

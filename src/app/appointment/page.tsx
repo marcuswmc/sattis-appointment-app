@@ -47,34 +47,57 @@ const AppointmentForm = () => {
 
   useEffect(() => {
     if (selectedService) {
-      const professionalsForService = professionals.filter((pro) =>
+      const professionalsForService = (professionals || []).filter((pro) =>
         pro.services.some((s) => s._id === selectedService)
       );
       setAvailableProfessionals(professionalsForService);
     }
   }, [selectedService, professionals]);
 
+ 
   useEffect(() => {
-    if (selectedService && formData.date) {
-      const service = services.find((s) => s._id === selectedService);
-      if (service) {
-        // Filtra os agendamentos para o serviço na data selecionada com status CONFIRMED
-        const bookedTimes = appointments
-          .filter(
-            (appt) =>
-              appt.serviceId._id === selectedService &&
-              appt.date === formData.date &&
-              appt.status === "CONFIRMED"
-          )
-          .map((appt) => appt.time);
-        // Os horários disponíveis são aqueles definidos no serviço que não estão nos agendamentos confirmados
-        const freeTimes = service.availableTimes.filter(
-          (time) => !bookedTimes.includes(time)
-        );
-        setAvailableTimes(freeTimes);
-      }
+    if (selectedService && formData.date && selectedProfessional) {
+      const fetchAvailableTimes = async () => {
+        try {
+          const response = await fetch(
+            `http://localhost:10000/api/services/available?date=${formData.date}`
+          );
+          if (!response.ok) throw new Error("Erro ao buscar horários disponíveis");
+    
+          const data = await response.json();
+    
+          const service = data.find((s: Service) => s._id === selectedService);
+    
+          if (!service) {
+            setAvailableTimes([]);
+            return;
+          }
+    
+          const professionalBookedTimes = appointments
+            .filter(
+              (appt) =>
+                appt.professionalId?. _id === selectedProfessional &&
+                appt.date === formData.date &&
+                appt.status === "CONFIRMED"
+            )
+            .map((appt) => appt.time);
+
+          const freeTimes = service.availableTimes.filter(
+            (time: string) => !professionalBookedTimes.includes(time)
+          );
+    
+          setAvailableTimes(freeTimes);
+        } catch (error) {
+          console.error(error);
+          setAvailableTimes([]);
+        }
+      };
+    
+      fetchAvailableTimes();
     }
-  }, [selectedService, formData.date, services, appointments]);
+  }, [selectedService, formData.date, selectedProfessional, appointments]);
+  
+  
 
   const handleSubmit = async () => {
     setLoading(true);
