@@ -3,12 +3,18 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 
+export interface Category {
+  _id: string;
+  name: string;
+}
+
 export interface Service {
   _id: string
   name: string
   description: string
   price: number
   duration: number
+  category: string | Category
   availableTimes: string[]
 }
 
@@ -35,9 +41,11 @@ type AppointmentsContextType = {
   appointments: Appointment[];
   services: Service[];
   professionals: Professional[];
+  categories: Category[];
   isLoading: boolean;
   fetchAppointments: (token: string | undefined, statuses?: string[]) => Promise<void>;
   fetchServicesAndProfessionals: (token: string | undefined) => Promise<void>;
+  fetchCategories: (token: string | undefined) => Promise<void>;
   setAppointments: (value: Appointment[] | ((prev: Appointment[]) => Appointment[])) => void;
 };
 
@@ -46,9 +54,11 @@ const defaultContext: AppointmentsContextType = {
   appointments: [],
   services: [],
   professionals: [],
+  categories: [],
   isLoading: false,
   fetchAppointments: async () => {},
   fetchServicesAndProfessionals: async () => {},
+  fetchCategories: async () => {},
   setAppointments: () => {},
 };
 
@@ -58,10 +68,10 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const searchParams = useSearchParams();
 
-  // Função para buscar os agendamentos
   const fetchAppointments = useCallback(
     async (token: string | undefined, statuses?: string[]) => {
       setIsLoading(true);
@@ -81,7 +91,7 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
 
         const headers: Record<string, string> = {};
         if (token) {
-          headers["Authorization"] = `Bearer ${token}`;  // Adiciona o token se houver
+          headers["Authorization"] = `Bearer ${token}`;
         }
 
         const response = await fetch(
@@ -106,7 +116,6 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
     [searchParams]
   );
 
-  // Função para buscar os serviços e profissionais
   const fetchServicesAndProfessionals = useCallback(async (token?: string) => {
     setIsLoading(true);
     try {
@@ -143,7 +152,31 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Contagem de agendamentos confirmados
+  const fetchCategories = useCallback(async (token?: string) => {
+    setIsLoading(true);
+    try {
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const categoriesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+        headers,
+      });
+
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json();
+        setCategories(categoriesData);
+      } else {
+        console.error("Erro ao carregar categorias");
+      }
+    } catch (error) {
+      console.error("Erro ao buscar categorias:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const confirmedCount = appointments.reduce((count, appointment) => {
     return appointment.status === "CONFIRMED" ? count + 1 : count;
   }, 0);
@@ -155,9 +188,11 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         appointments,
         services,
         professionals,
+        categories,
         isLoading,
         fetchAppointments,
         fetchServicesAndProfessionals,
+        fetchCategories,
         setAppointments,
       }}
     >

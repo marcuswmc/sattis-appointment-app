@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { Loader2, Edit, Trash } from "lucide-react";
+import { Loader2, Edit, Trash, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { EditServiceDialog } from "@/components/edit-service-dialog";
 import { useAppointments } from "@/hooks/appointments-context";
+import { Service, Category } from "@/hooks/appointments-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,22 +20,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
-interface Service {
-  _id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: number;
-  availableTimes: string[];
-}
 
 interface ServiceListProps {
   token: string | undefined;
@@ -42,20 +27,19 @@ interface ServiceListProps {
 
 export function ServiceList({ token }: ServiceListProps) {
   const {
+    categories,
+    fetchCategories,
     services,
     isLoading,
     fetchServicesAndProfessionals,
-    setAppointments,
     fetchAppointments,
   } = useAppointments();
   const [serviceToEdit, setServiceToEdit] = useState<Service | null>(null);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isDeleteLoading, setIsDeleteLoading] = useState<string | null>(null);
-  
-  console.log(services)
 
   useEffect(() => {
     fetchServicesAndProfessionals(token);
+    fetchCategories(token);
     fetchAppointments(token);
   }, [token]);
 
@@ -74,10 +58,8 @@ export function ServiceList({ token }: ServiceListProps) {
       );
 
       if (response.ok) {
-        setAppointments((prev) => ({
-          ...prev,
-          services: prev.filter((service) => service._id !== id),
-        }));
+        // Recarregar serviços após deleção
+        fetchServicesAndProfessionals(token);
         toast("Serviço excluído", {
           description: "O serviço foi excluído com sucesso",
         });
@@ -93,6 +75,11 @@ export function ServiceList({ token }: ServiceListProps) {
     } finally {
       setIsDeleteLoading(null);
     }
+  };
+
+  const findCategoryName = (categoryId: string) => {
+    const category = categories.find((cat) => cat._id === categoryId);
+    return category ? category.name : "Sem categoria";
   };
 
   if (isLoading) {
@@ -121,7 +108,17 @@ export function ServiceList({ token }: ServiceListProps) {
           <Card key={service._id} className="p-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">{service.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-medium">{service.name}</h3>
+                  {service.category && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Tag className="h-3 w-3" />
+                      {typeof service.category === "string"
+                        ? findCategoryName(service.category)
+                        : service.category.name}
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"

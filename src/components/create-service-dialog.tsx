@@ -2,13 +2,14 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Plus, X } from "lucide-react"
 import {
   Dialog,
@@ -18,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useAppointments } from "@/hooks/appointments-context"
 
 interface CreateServiceDialogProps {
   open: boolean
@@ -26,19 +28,29 @@ interface CreateServiceDialogProps {
 
 export function CreateServiceDialog({ open, onOpenChange }: CreateServiceDialogProps) {
   const { data: session } = useSession()
+  const { categories, fetchCategories } = useAppointments()
 
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [price, setPrice] = useState("")
   const [duration, setDuration] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false)
 
+  useEffect(() => {
+    if (open) {
 
+      setIsCategoriesLoading(true)
+      fetchCategories(session?.user.accessToken)
+        .finally(() => setIsCategoriesLoading(false))
+    }
+  }, [open, session?.user.accessToken, fetchCategories])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!session?.user.accessToken) return
+    if (!session?.user.accessToken || !selectedCategory) return
 
     setIsLoading(true)
 
@@ -54,22 +66,22 @@ export function CreateServiceDialog({ open, onOpenChange }: CreateServiceDialogP
           description,
           price: Number.parseFloat(price),
           duration: Number.parseInt(duration),
+          category: selectedCategory
         }),
       })
 
       if (response.ok) {
-        toast("Serviço criado",{
+        toast("Serviço criado", {
           description: "O serviço foi criado com sucesso",
         })
-
 
         setName("")
         setDescription("")
         setPrice("")
         setDuration("")
+        setSelectedCategory(null)
 
         onOpenChange(false)
-
 
         window.location.reload()
       } else {
@@ -109,7 +121,7 @@ export function CreateServiceDialog({ open, onOpenChange }: CreateServiceDialogP
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Preço (R$)</Label>
+              <Label htmlFor="price">Preço (€)</Label>
               <Input
                 id="price"
                 type="number"
@@ -133,11 +145,53 @@ export function CreateServiceDialog({ open, onOpenChange }: CreateServiceDialogP
               />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Categorias</Label>
+            {isCategoriesLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="max-h-60 overflow-auto rounded-md border p-2">
+                {categories.length > 0 ? (
+                  categories.map((category) => (
+                    <div key={category._id} className="flex items-center space-x-2 py-1">
+                      <Checkbox
+                        id={`category-${category._id}`}
+                        checked={selectedCategory === category._id}
+                        onCheckedChange={() => 
+                          setSelectedCategory(prev => 
+                            prev === category._id ? null : category._id
+                          )
+                        }
+                      />
+                      <Label 
+                        htmlFor={`category-${category._id}`} 
+                        className="cursor-pointer text-sm font-normal"
+                      >
+                        {category.name}
+                      </Label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="py-2 text-center text-sm text-muted-foreground">
+                    Nenhuma categoria disponível
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           <DialogFooter className="pt-4">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" variant="outline" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              variant="outline" 
+              disabled={isLoading || !selectedCategory}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -153,4 +207,3 @@ export function CreateServiceDialog({ open, onOpenChange }: CreateServiceDialogP
     </Dialog>
   )
 }
-
