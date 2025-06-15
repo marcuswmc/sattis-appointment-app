@@ -22,6 +22,7 @@ export interface Professional {
   _id: string;
   name: string;
   services: Service[]
+  image?: string
 }
 
 export interface Appointment {
