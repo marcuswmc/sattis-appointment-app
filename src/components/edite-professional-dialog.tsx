@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface Professional {
   _id: string;
@@ -125,15 +126,15 @@ export function EditProfessionalDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md sm:h-[90vh] md:h-auto">
         <DialogHeader>
           <DialogTitle>Editar Profissional</DialogTitle>
           <DialogDescription>
             Atualize os dados do profissional abaixo.
           </DialogDescription>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+        <ScrollArea className="h-[480px]">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="edit-name">Nome</Label>
             <Input
@@ -149,7 +150,7 @@ export function EditProfessionalDialog({
             <div className="space-y-2">
               <Label htmlFor="edit-image">Imagem</Label>
 
-              <div className="relative h-32 w-32">
+              <div className="relative h-20 w-20">
                 <Label
                   htmlFor="edit-image"
                   className={`group flex h-full w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border transition hover:border-primary ${
@@ -219,7 +220,7 @@ export function EditProfessionalDialog({
                     checked={selectedServices.includes(service._id)}
                     onCheckedChange={() => handleServiceToggle(service._id)}
                   />
-                  <span>{service.name}</span>
+                  <span className="text-sm">{service.name}</span>
                 </div>
               ))}
             </div>
@@ -245,6 +246,7 @@ export function EditProfessionalDialog({
             </Button>
           </DialogFooter>
         </form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

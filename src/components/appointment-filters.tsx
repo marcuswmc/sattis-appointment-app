@@ -18,6 +18,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
+const formatDateToLocalString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function AppointmentFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,7 +67,7 @@ export function AppointmentFilters() {
     const params = new URLSearchParams();
 
     if (date) {
-      params.set("date", date.toISOString().split("T")[0]);
+      params.set("date", formatDateToLocalString(date));
     }
 
     if (service) {
@@ -94,7 +101,7 @@ export function AppointmentFilters() {
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "PPP", { locale: ptBR }) : "Selecione uma data"}
+            {date ? format(date, "PPP", { locale: pt }) : "Selecione uma data"}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">

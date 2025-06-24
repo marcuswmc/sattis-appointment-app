@@ -3,9 +3,19 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { CalendarIcon, Filter, Search, X } from "lucide-react";
 import { format } from "date-fns";
 import { pt, ptBR } from "date-fns/locale";
@@ -18,17 +28,32 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
+const formatDateToLocalString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export function HistoryFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [date, setDate] = useState<Date | undefined>(
-    searchParams.get("date") ? new Date(searchParams.get("date") as string) : undefined,
+    searchParams.get("date")
+      ? new Date(searchParams.get("date") as string)
+      : undefined
   );
-  const [service, setService] = useState<string>(searchParams.get("service") || "");
-  const [professional, setProfessional] = useState<string>(searchParams.get("professional") || "");
+  const [service, setService] = useState<string>(
+    searchParams.get("service") || ""
+  );
+  const [professional, setProfessional] = useState<string>(
+    searchParams.get("professional") || ""
+  );
   const [services, setServices] = useState<{ _id: string; name: string }[]>([]);
-  const [professionals, setProfessionals] = useState<{ _id: string; name: string }[]>([]);
+  const [professionals, setProfessionals] = useState<
+    { _id: string; name: string }[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -60,7 +85,7 @@ export function HistoryFilters() {
     const params = new URLSearchParams();
 
     if (date) {
-      params.set("date", date.toISOString().split("T")[0]);
+      params.set("date", formatDateToLocalString(date));
     }
 
     if (service) {
@@ -94,7 +119,9 @@ export function HistoryFilters() {
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "PPP", { locale: ptBR }) : "Selecione uma data"}
+            {date
+              ? format(date, "PPP", { locale: ptBR })
+              : "Selecione uma data"}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
@@ -151,8 +178,13 @@ export function HistoryFilters() {
       <div className="md:hidden w-full">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" className="w-full flex items-center justify-between">
-              <span className="text-gray-500">Busque por: data, serviço ou profissional..</span>
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-between"
+            >
+              <span className="text-gray-500">
+                Busque por: data, serviço ou profissional..
+              </span>
               <Filter className="h-6 w-6 text-gray-500" />
             </Button>
           </SheetTrigger>
@@ -174,7 +206,11 @@ export function HistoryFilters() {
       {/* Desktop: exibe os filtros inline */}
       <div className="hidden md:flex w-full items-center justify-between">
         {FiltersContent}
-        <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={clearFilters}
+          className="flex items-center gap-2"
+        >
           <X className="h-4 w-4" />
           Limpar filtros
         </Button>

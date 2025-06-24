@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface Service {
   _id: string;
@@ -143,15 +144,15 @@ export function CreateProfessionalDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md sm:h-[90vh] md:h-auto">
         <DialogHeader>
           <DialogTitle>Novo profissional</DialogTitle>
           <DialogDescription>
             Preencha os campos abaixo para criar um novo profissional
           </DialogDescription>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <ScrollArea className="h-[480px]">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input
@@ -162,11 +163,11 @@ export function CreateProfessionalDialog({
             />
           </div>
 
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             <div className="space-y-2">
               <Label htmlFor="image">Imagem</Label>
 
-              <div className="relative h-32 w-32">
+              <div className="relative h-20 w-20">
                 <Label
                   htmlFor="image"
                   className={`group flex h-full w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border transition hover:border-primary ${
@@ -181,8 +182,8 @@ export function CreateProfessionalDialog({
                     />
                   ) : (
                     <div className="flex flex-col items-center text-muted-foreground">
-                      <ImagePlus className="h-6 w-6 mb-1" />
-                      <span className="text-xs">Selecionar imagem</span>
+                      <ImagePlus className="h-4 w-4 mb-1" />
+                      <span className="text-xs text-center">Selecionar imagem</span>
                     </div>
                   )}
                   <Input
@@ -282,6 +283,7 @@ export function CreateProfessionalDialog({
             </Button>
           </DialogFooter>
         </form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
