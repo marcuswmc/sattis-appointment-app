@@ -26,6 +26,7 @@ export interface Professional {
 }
 
 export interface Appointment {
+  isMissed: boolean;
   _id: string;
   date: string;
   time: string;
@@ -85,10 +86,12 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         const date = searchParams.get("date");
         const service = searchParams.get("service");
         const professional = searchParams.get("professional");
+        const missed = searchParams.get("missed")
 
         if (date) params.set("date", date);
         if (service) params.set("service", service);
         if (professional) params.set("professional", professional);
+        if (missed) params.set("isMissed", missed);
 
         const headers: Record<string, string> = {};
         if (token) {

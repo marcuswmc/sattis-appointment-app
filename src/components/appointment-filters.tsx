@@ -34,6 +34,10 @@ export function AppointmentFilters() {
   );
   const [service, setService] = useState<string>(searchParams.get("service") || "");
   const [professional, setProfessional] = useState<string>(searchParams.get("professional") || "");
+  //
+  const [missed, setMissed] = useState<string>(searchParams.get("missed") || ""); //
+
+
   const [services, setServices] = useState<{ _id: string; name: string }[]>([]);
   const [professionals, setProfessionals] = useState<{ _id: string; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,6 +82,11 @@ export function AppointmentFilters() {
       params.set("professional", professional);
     }
 
+    //
+    if (missed && missed !== "all") { // Alterado de `if (missed)` para `if (missed && missed !== "all")`
+      params.set("missed", missed);
+    }
+
     router.push(`/dashboard/appointments?${params.toString()}`);
   };
 
@@ -85,6 +94,7 @@ export function AppointmentFilters() {
     setDate(undefined);
     setService("");
     setProfessional("");
+    setMissed(""); //
     router.push("/dashboard/appointments");
   };
 
@@ -138,6 +148,17 @@ export function AppointmentFilters() {
               {item.name}
             </SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+
+      {/* */}
+      <Select value={missed} onValueChange={setMissed}>
+        <SelectTrigger className="w-full md:w-auto cursor-pointer">
+          <SelectValue placeholder="Status de Falta" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="true">Com Falta</SelectItem>
         </SelectContent>
       </Select>
 

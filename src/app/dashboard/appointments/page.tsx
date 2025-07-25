@@ -8,7 +8,7 @@ export default async function AppointmentsPage() {
   const session = await auth();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Marcações</h2>
         <p className="text-muted-foreground">

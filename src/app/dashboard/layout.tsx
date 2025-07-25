@@ -30,7 +30,7 @@ export default async function DashboardLayout({
         <div className="flex w-full">
           <Sidebar>
             <SidebarHeader className="p-0">
-              <div className="flex items-center gap-2 p-4">
+              <div className="flex items-center gap-2 p-3">
                 <Avatar>
                   <AvatarImage src={sattisLogo.src} alt="Sattis Studio logo" />
                   <AvatarFallback>SS</AvatarFallback>
@@ -50,7 +50,7 @@ export default async function DashboardLayout({
               <DashboardNav user={session.user} />
             </SidebarContent>
           </Sidebar>
-          <main className="flex-1 overflow-auto p-4 md:p-6 w-full">
+          <main className="flex-1 overflow-auto p-4 md:p-4 w-full">
             <div className="flex h-14 items-center gap-2 md:hidden justify-between">
               <SidebarTrigger className="hover:bg-primary hover:text-accent cursor-pointer"/>
               <div className="flex items-center gap-2">
