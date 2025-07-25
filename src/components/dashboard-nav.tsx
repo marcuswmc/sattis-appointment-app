@@ -71,7 +71,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
                 {item.title}
               </div>
               {item.title === "Marcações" && confirmedCount > 0 && (
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium text-primary">
                   {confirmedCount > 99 ? "99+" : confirmedCount}
                 </div>
               )}

@@ -10,7 +10,7 @@ export default async function HistorPage() {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-6 overflow-hidden">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Histórico</h2>
           <p className="text-muted-foreground">

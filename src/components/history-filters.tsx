@@ -50,6 +50,8 @@ export function HistoryFilters() {
   const [professional, setProfessional] = useState<string>(
     searchParams.get("professional") || ""
   );
+  const [missed, setMissed] = useState<string>(searchParams.get("missed") || ""); // Add missed state
+
   const [services, setServices] = useState<{ _id: string; name: string }[]>([]);
   const [professionals, setProfessionals] = useState<
     { _id: string; name: string }[]
@@ -96,6 +98,10 @@ export function HistoryFilters() {
       params.set("professional", professional);
     }
 
+    if (missed && missed !== "all") { // Apply missed filter
+      params.set("missed", missed);
+    }
+
     router.push(`/dashboard/history?${params.toString()}`);
   };
 
@@ -103,6 +109,7 @@ export function HistoryFilters() {
     setDate(undefined);
     setService("");
     setProfessional("");
+    setMissed(""); // Clear missed state
     router.push("/dashboard/history");
   };
 
@@ -136,7 +143,7 @@ export function HistoryFilters() {
       </Popover>
 
       <Select value={service} onValueChange={setService}>
-        <SelectTrigger className="w-full md:w-auto cursor-pointer">
+        <SelectTrigger className="w-full md:w-auto cursor-pointer focus:outline-hidden">
           <SelectValue placeholder="Serviço" />
         </SelectTrigger>
         <SelectContent>
@@ -158,6 +165,17 @@ export function HistoryFilters() {
               {item.name}
             </SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+
+      {/* Add missed filter */}
+      <Select value={missed} onValueChange={setMissed}>
+        <SelectTrigger className="w-full md:w-auto cursor-pointer">
+          <SelectValue placeholder="Status de Falta" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="true">Com Falta</SelectItem>
         </SelectContent>
       </Select>
 
