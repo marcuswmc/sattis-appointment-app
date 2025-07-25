@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function AppointmentsPage() {
   const session = await auth();
+  const accessToken = session?.user.accessToken;
 
   return (
     <div className="space-y-6 overflow-hidden">
@@ -16,10 +17,10 @@ export default async function AppointmentsPage() {
         </p>
       </div>
       <div>
-        <AppointmentFilters />
+        <AppointmentFilters token={accessToken}/>
       </div>
       <Suspense fallback={<AppointmentsListSkeleton />}>
-        <AppointmentList token={session?.user.accessToken} />
+        <AppointmentList token={accessToken} />
       </Suspense>
     </div>
   );

@@ -21,7 +21,7 @@ import {
   Clock,
   Phone,
   User,
-  Flag, // Importado o ícone de bandeira
+  Flag,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -50,25 +50,31 @@ interface AppointmentListProps {
 }
 
 const ITEMS_PER_PAGE = 20;
-const BUFFER_SIZE = 5;
 
 export function AppointmentList({ token }: AppointmentListProps) {
   const searchParams = useSearchParams();
-  const { appointments, isLoading, fetchAppointments, setAppointments } =
-    useAppointments();
+  const {
+    appointments,
+    isLoading,
+    fetchAppointments,
+    setAppointments,
+    customerMissedStatus,
+    updateCustomerMissedStatus,
+  } = useAppointments();
 
+  const [displayedItems, setDisplayedItems] = useState(ITEMS_PER_PAGE);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<
     string | null
   >(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [displayedItems, setDisplayedItems] = useState(ITEMS_PER_PAGE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    fetchAppointments(token);
-  }, [token, fetchAppointments, searchParams]);
+    const currentStatuses = ["CONFIRMED"];
+    fetchAppointments(token, currentStatuses);
+  }, [token, fetchAppointments]);
 
   useEffect(() => {
     setDisplayedItems(ITEMS_PER_PAGE);
@@ -77,8 +83,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
   const filterDate = searchParams.get("date");
   const filterService = searchParams.get("service");
   const filterProfessional = searchParams.get("professional");
-  //
-  const filterMissed = searchParams.get("missed"); //
+  const filterMissed = searchParams.get("missed");
 
   const filteredAppointments = useMemo(() => {
     let filtered = appointments.filter(
@@ -103,14 +108,16 @@ export function AppointmentList({ token }: AppointmentListProps) {
       );
     }
 
-    //
     if (filterMissed === "true") {
       filtered = filtered.filter(
-        (appointment) => appointment.isMissed === true
+        (appointment) =>
+          customerMissedStatus[appointment.customerEmail] === true
       );
     } else if (filterMissed === "false") {
       filtered = filtered.filter(
-        (appointment) => appointment.isMissed === false
+        (appointment) =>
+          customerMissedStatus[appointment.customerEmail] === false ||
+          customerMissedStatus[appointment.customerEmail] === undefined
       );
     }
 
@@ -125,7 +132,8 @@ export function AppointmentList({ token }: AppointmentListProps) {
     filterService,
     filterProfessional,
     filterMissed,
-  ]); //
+    customerMissedStatus,
+  ]);
 
   const displayedAppointments = useMemo(() => {
     return filteredAppointments.slice(0, displayedItems);
@@ -176,103 +184,184 @@ export function AppointmentList({ token }: AppointmentListProps) {
     };
   }, []);
 
-  const updateAppointmentStatus = async (id: string, status: string) => {
-    if (!token) return;
+  const handleCancelAppointment = useCallback((id: string) => {
+    setSelectedAppointmentId(id);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleConfirmCancel = useCallback(async () => {
+    if (!selectedAppointmentId || !token) return;
 
     try {
-      console.log("Atualizando status do agendamento ID:", id);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/appointment/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/appointment/${selectedAppointmentId}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ status }),
+          body: JSON.stringify({ status: "CANCELED" }),
         }
       );
 
       if (response.ok) {
-        toast("Status atualizado", {
-          description: `Agendamento ${
-            status === "FINISHED" ? "finalizado" : "cancelado"
-          } com sucesso`,
+        toast("Agendamento cancelado", {
+          description: "O agendamento foi cancelado com sucesso.",
         });
-        fetchAppointments(token); // Re-fetch appointments to update the list
-      } else {
-        toast.error("Erro ao atualizar", {
-          description: "Não foi possível atualizar o status",
-        });
-      }
-    } catch (error) {
-      toast.error("Erro ao atualizar", {
-        description: "Não foi possível atualizar o status",
-      });
-    }
-  };
-
-  //
-  const handleToggleMissed = async (
-    id: string,
-    currentMissedStatus: boolean
-  ) => {
-    if (!token) return;
-
-    try {
-      const newMissedStatus = !currentMissedStatus;
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/appointment/toggle-missed/${id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ isMissed: newMissedStatus }),
-        }
-      );
-
-      if (response.ok) {
-        toast("Status de falta atualizado", {
-          description: `Agendamento ${
-            newMissedStatus ? "marcado com falta" : "removido da falta"
-          } com sucesso`,
-        });
-        // Update the appointment in the local state
         setAppointments((prevAppointments) =>
           prevAppointments.map((app) =>
-            app._id === id ? { ...app, isMissed: newMissedStatus } : app
+            app._id === selectedAppointmentId
+              ? { ...app, status: "CANCELED" }
+              : app
           )
         );
       } else {
-        toast.error("Erro ao atualizar status de falta", {
-          description: "Não foi possível atualizar o status de falta",
+        toast.error("Erro ao cancelar agendamento", {
+          description: "Não foi possível cancelar o agendamento.",
         });
       }
     } catch (error) {
-      toast.error("Erro ao atualizar status de falta", {
-        description: "Não foi possível atualizar o status de falta",
+      toast.error("Erro ao cancelar agendamento", {
+        description: "Não foi possível cancelar o agendamento.",
       });
-    }
-  };
-
-  const handleCancelClick = (id: string) => {
-    setSelectedAppointmentId(id);
-    setIsModalOpen(true);
-  };
-
-  const handleConfirmCancel = async () => {
-    if (selectedAppointmentId) {
-      await updateAppointmentStatus(selectedAppointmentId, "CANCELED");
+    } finally {
       setIsModalOpen(false);
       setSelectedAppointmentId(null);
     }
-  };
+  }, [selectedAppointmentId, token, setAppointments]);
+
+  const handleFinishAppointment = useCallback(
+    async (id: string) => {
+      if (!token) return;
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/appointment/${id}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status: "FINISHED" }),
+          }
+        );
+
+        if (response.ok) {
+          toast("Agendamento finalizado", {
+            description: "O agendamento foi finalizado com sucesso.",
+          });
+          setAppointments((prevAppointments) =>
+            prevAppointments.map((app) =>
+              app._id === id ? { ...app, status: "FINISHED" } : app
+            )
+          );
+        } else {
+          toast.error("Erro ao finalizar agendamento", {
+            description: "Não foi possível finalizar o agendamento.",
+          });
+        }
+      } catch (error) {
+        toast.error("Erro ao finalizar agendamento", {
+          description: "Não foi possível finalizar o agendamento.",
+        });
+      }
+    },
+    [token, setAppointments]
+  );
+
+  // Modificação da handleToggleMissed para chamar reset-missed-count
+  const handleToggleMissed = useCallback(
+    async (
+      id: string, // ID do agendamento específico (usado para toggle-missed)
+      customerEmail: string,
+      currentAppointmentIsMissed: boolean, // isMissed deste agendamento específico
+      customerHasOverallMissedFlag: boolean // Status geral de falta do cliente
+    ) => {
+      if (!token) return;
+
+      try {
+        if (customerHasOverallMissedFlag) {
+          // Ação: "Remover falta" -> chamar reset-missed-count para o email do cliente
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/appointments/reset-missed-count/${customerEmail}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            toast("Faltas redefinidas", {
+              description: `Todas as faltas para ${customerEmail} foram redefinidas.`,
+            });
+            updateCustomerMissedStatus(customerEmail, false);
+            setAppointments((prevAppointments) =>
+              prevAppointments.map((app) =>
+                app.customerEmail === customerEmail
+                  ? { ...app, isMissed: false }
+                  : app
+              )
+            );
+          } else {
+            toast.error("Erro ao redefinir faltas", {
+              description: "Não foi possível redefinir as faltas do cliente.",
+            });
+          }
+        } else {
+          // Ação: "Marcar com falta" -> chamar toggle-missed para este agendamento específico
+          const newMissedStatus = !currentAppointmentIsMissed; // Isso se tornará true
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/appointment/toggle-missed/${id}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ isMissed: newMissedStatus }),
+            }
+          );
+
+          if (response.ok) {
+            toast("Status de falta atualizado", {
+              description: `Agendamento ${
+                newMissedStatus ? "marcado com falta" : "removido da falta"
+              } com sucesso`,
+            });
+            // Se este agendamento específico for marcado como falta,
+            // atualizar o status geral do cliente para true
+            updateCustomerMissedStatus(customerEmail, newMissedStatus);
+            setAppointments((prevAppointments) =>
+              prevAppointments.map((app) =>
+                app._id === id ? { ...app, isMissed: newMissedStatus } : app
+              )
+            );
+          } else {
+            toast.error("Erro ao atualizar status de falta", {
+              description: "Não foi possível atualizar o status de falta",
+            });
+          }
+        }
+      } catch (error) {
+        toast.error("Erro de rede", {
+          description: "Não foi possível conectar ao servidor.",
+        });
+        console.error("Network error:", error);
+      }
+    },
+    [token, setAppointments, updateCustomerMissedStatus]
+  );
 
   const AppointmentRow = useCallback(
     ({ appointment, index }: { appointment: any; index: number }) => {
       const isLast = index === displayedAppointments.length - 1;
+      const hasCustomerMissedFlag =
+        customerMissedStatus[appointment.customerEmail];
 
       return (
         <TableRow
@@ -294,9 +383,9 @@ export function AppointmentList({ token }: AppointmentListProps) {
             </div>
           </TableCell>
           <TableCell>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 w-[140px]">
               <User className="h-3 w-3 text-gray-500" />
-              {appointment.customerName}
+              <p className="truncate">{appointment.customerName}</p>
             </div>
           </TableCell>
           <TableCell>
@@ -306,9 +395,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
             </div>
           </TableCell>
           <TableCell>
-            {appointment.isMissed && ( //
-              <Flag className="h-4 w-4 text-red-500" /> //
-            )}
+            {hasCustomerMissedFlag && <Flag className="h-4 w-4 text-red-500" />}
           </TableCell>
           <TableCell>
             <DropdownMenu>
@@ -320,27 +407,27 @@ export function AppointmentList({ token }: AppointmentListProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() =>
-                    updateAppointmentStatus(appointment._id, "FINISHED")
-                  }
+                  onClick={() => handleFinishAppointment(appointment._id)}
                 >
-                  <Check className="mr-2 h-4 w-4" />
-                  Finalizar
+                  <Check className="mr-2 h-4 w-4" /> Finalizar
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => handleCancelClick(appointment._id)}
+                  onClick={() => handleCancelAppointment(appointment._id)}
                 >
-                  <X className="mr-2 h-4 w-4" />
-                  Cancelar
+                  <X className="mr-2 h-4 w-4" /> Cancelar
                 </DropdownMenuItem>
-                {/* */}
                 <DropdownMenuItem
                   onClick={() =>
-                    handleToggleMissed(appointment._id, appointment.isMissed)
+                    handleToggleMissed(
+                      appointment._id,
+                      appointment.customerEmail,
+                      appointment.isMissed,
+                      hasCustomerMissedFlag // Passando o novo argumento
+                    )
                   }
                 >
                   <Flag className="mr-2 h-4 w-4" />
-                  {appointment.isMissed ? "Remover falta" : "Marcar com falta"}
+                  {hasCustomerMissedFlag ? "Remover falta" : "Marcar com falta"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -352,15 +439,18 @@ export function AppointmentList({ token }: AppointmentListProps) {
       displayedAppointments.length,
       hasMore,
       lastItemRef,
-      updateAppointmentStatus,
-      handleCancelClick,
-      handleToggleMissed, //
+      handleFinishAppointment,
+      handleCancelAppointment,
+      handleToggleMissed,
+      customerMissedStatus,
     ]
   );
 
   const AppointmentCard = useCallback(
     ({ appointment, index }: { appointment: any; index: number }) => {
       const isLast = index === displayedAppointments.length - 1;
+      const hasCustomerMissedFlag =
+        customerMissedStatus[appointment.customerEmail];
 
       return (
         <Card
@@ -371,13 +461,11 @@ export function AppointmentList({ token }: AppointmentListProps) {
           <CardHeader className="pb-1 pt-0 px-0">
             <CardTitle className="text-sm font-semibold flex justify-between items-center">
               <span className="truncate flex items-center gap-2">
-                {" "}
-                {/* */}
                 {appointment.serviceId.name}
               </span>
               <div className="flex gap-2">
                 <div className="my-auto">
-                  {appointment.isMissed && (
+                  {hasCustomerMissedFlag && (
                     <Flag className="h-4 w-4 text-red-500" />
                   )}
                 </div>
@@ -393,30 +481,27 @@ export function AppointmentList({ token }: AppointmentListProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={() =>
-                        updateAppointmentStatus(appointment._id, "FINISHED")
-                      }
+                      onClick={() => handleFinishAppointment(appointment._id)}
                     >
-                      <Check className="mr-2 h-4 w-4" />
-                      Finalizar
+                      <Check className="mr-2 h-4 w-4" /> Finalizar
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handleCancelClick(appointment._id)}
+                      onClick={() => handleCancelAppointment(appointment._id)}
                     >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancelar
+                      <X className="mr-2 h-4 w-4" /> Cancelar
                     </DropdownMenuItem>
-                    {/* */}
                     <DropdownMenuItem
                       onClick={() =>
                         handleToggleMissed(
                           appointment._id,
-                          appointment.isMissed
+                          appointment.customerEmail,
+                          appointment.isMissed,
+                          hasCustomerMissedFlag // Passando o novo argumento
                         )
                       }
                     >
                       <Flag className="mr-2 h-4 w-4" />
-                      {appointment.isMissed
+                      {hasCustomerMissedFlag
                         ? "Remover falta"
                         : "Marcar com falta"}
                     </DropdownMenuItem>
@@ -451,9 +536,10 @@ export function AppointmentList({ token }: AppointmentListProps) {
       displayedAppointments.length,
       hasMore,
       lastItemRef,
-      updateAppointmentStatus,
-      handleCancelClick,
-      handleToggleMissed, //
+      handleFinishAppointment,
+      handleCancelAppointment,
+      handleToggleMissed,
+      customerMissedStatus,
     ]
   );
 
@@ -466,16 +552,15 @@ export function AppointmentList({ token }: AppointmentListProps) {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full flex flex-col">
       {filteredAppointments.length > 0 && (
-        <div className="mb-4 text-sm text-muted-foreground">
+        <div className="mb-4 text-sm text-muted-foreground flex-shrink-0">
           Mostrando {displayedAppointments.length} de{" "}
           {filteredAppointments.length} agendamentos
         </div>
       )}
-      <ScrollArea className="h-[60vh] md:h-[600px]">
+      <ScrollArea className="h-[56vh] md:h-[600px]">
         <div className="hidden md:block">
-          {/* Versão para telas maiores */}
           <Table>
             <TableHeader>
               <TableRow>
@@ -483,7 +568,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
                 <TableHead className="w-[15%]">Profissional</TableHead>
                 <TableHead className="w-[12%]">Data</TableHead>
                 <TableHead className="w-[10%]">Hora</TableHead>
-                <TableHead className="w-[20%]">Cliente</TableHead>
+                <TableHead className="w-[18%]">Cliente</TableHead>
                 <TableHead className="w-[12%]">Tel</TableHead>
                 <TableHead className="w-[5%]">Falta</TableHead>
                 <TableHead className="w-[5%]">Ações</TableHead>
@@ -529,7 +614,6 @@ export function AppointmentList({ token }: AppointmentListProps) {
           )}
         </div>
 
-        {/* Versão mobile */}
         <div className="md:hidden space-y-2">
           {displayedAppointments.length > 0 ? (
             displayedAppointments.map((appointment, index) => (

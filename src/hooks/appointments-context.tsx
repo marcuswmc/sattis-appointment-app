@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react"; // Adicionado useEffect
 import { useSearchParams } from "next/navigation";
 
 export interface Category {
@@ -32,8 +32,7 @@ export interface Appointment {
   time: string;
   status: string;
   customerName: string;
-  customerEmail: string;
-  customerPhone: string;
+  customerEmail: string; // Garantir que customerEmail está presente
   serviceId: Service;
   professionalId: Professional;
 }
@@ -44,11 +43,14 @@ type AppointmentsContextType = {
   services: Service[];
   professionals: Professional[];
   categories: Category[];
+  customerMissedStatus: Record<string, boolean>; // Novo: Mapa de email para status de falta
   isLoading: boolean;
   fetchAppointments: (token: string | undefined, statuses?: string[]) => Promise<void>;
   fetchServicesAndProfessionals: (token: string | undefined) => Promise<void>;
   fetchCategories: (token: string | undefined) => Promise<void>;
   setAppointments: (value: Appointment[] | ((prev: Appointment[]) => Appointment[])) => void;
+  // Novo: Função para atualizar o status de falta de um cliente
+  updateCustomerMissedStatus: (email: string, isMissed: boolean) => void;
 };
 
 const defaultContext: AppointmentsContextType = {
@@ -57,11 +59,13 @@ const defaultContext: AppointmentsContextType = {
   services: [],
   professionals: [],
   categories: [],
+  customerMissedStatus: {}, // Inicializa vazio
   isLoading: false,
   fetchAppointments: async () => {},
   fetchServicesAndProfessionals: async () => {},
   fetchCategories: async () => {},
   setAppointments: () => {},
+  updateCustomerMissedStatus: () => {},
 };
 
 const AppointmentsContext = createContext<AppointmentsContextType>(defaultContext);
@@ -71,8 +75,38 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [customerMissedStatus, setCustomerMissedStatus] = useState<Record<string, boolean>>({}); // Estado para o status de falta do cliente
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const searchParams = useSearchParams();
+
+  // Função para buscar o status de falta de um cliente específico
+  const fetchCustomerMissedStatus = useCallback(async (email: string, token: string | undefined) => {
+    if (!token || !email) return;
+    try {
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/appointments/missed/${email}`, {
+        headers,
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Se a contagem de faltas for maior que 0, o cliente tem falta
+        setCustomerMissedStatus(prev => ({ ...prev, [email]: data.missedCount > 0 }));
+      } else {
+        console.error(`Erro ao carregar status de falta para ${email}`);
+      }
+    } catch (error) {
+      console.error(`Erro ao buscar status de falta para ${email}:`, error);
+    }
+  }, []);
+
+  // Função para atualizar o status de falta de um cliente (chamada após toggleMissedFlag)
+  const updateCustomerMissedStatus = useCallback((email: string, isMissed: boolean) => {
+    setCustomerMissedStatus(prev => ({ ...prev, [email]: isMissed }));
+  }, []);
+
 
   const fetchAppointments = useCallback(
     async (token: string | undefined, statuses?: string[]) => {
@@ -86,12 +120,10 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         const date = searchParams.get("date");
         const service = searchParams.get("service");
         const professional = searchParams.get("professional");
-        const missed = searchParams.get("missed")
 
         if (date) params.set("date", date);
         if (service) params.set("service", service);
         if (professional) params.set("professional", professional);
-        if (missed) params.set("isMissed", missed);
 
         const headers: Record<string, string> = {};
         if (token) {
@@ -108,6 +140,13 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         if (response.ok) {
           const data = await response.json();
           setAppointments(data);
+
+          // Após buscar os agendamentos, buscar o status de falta para cada cliente único
+          const uniqueCustomerEmails: string[] = Array.from(new Set(data.map((app: Appointment) => app.customerEmail)));
+          uniqueCustomerEmails.forEach((email: string) => {
+            fetchCustomerMissedStatus(email, token);
+          });
+
         } else {
           console.error("Erro ao carregar os agendamentos");
         }
@@ -117,7 +156,7 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     },
-    [searchParams]
+    [searchParams, fetchCustomerMissedStatus]
   );
 
   const fetchServicesAndProfessionals = useCallback(async (token?: string) => {
@@ -193,11 +232,13 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         services,
         professionals,
         categories,
+        customerMissedStatus, // Adicionado ao contexto
         isLoading,
         fetchAppointments,
         fetchServicesAndProfessionals,
         fetchCategories,
         setAppointments,
+        updateCustomerMissedStatus, // Adicionado ao contexto
       }}
     >
       {children}

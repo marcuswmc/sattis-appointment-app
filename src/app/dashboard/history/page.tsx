@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function HistorPage() {
   const session = await auth();
+  const acesstoken = session?.user.accessToken
 
   return (
     <>
@@ -18,10 +19,10 @@ export default async function HistorPage() {
           </p>
         </div>
         <div>
-          <HistoryFilters />
+          <HistoryFilters token={acesstoken}/>
         </div>
         <Suspense fallback={<HistoryListSkeleton />}>
-          <HistoryList token={session?.user.accessToken} />
+          <HistoryList token={acesstoken} />
         </Suspense>
       </div>
     </>
