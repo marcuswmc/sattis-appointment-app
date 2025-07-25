@@ -41,7 +41,14 @@ const ITEMS_PER_PAGE = 20;
 
 export default function HistoryList({ token }: HistoryListProps) {
   const searchParams = useSearchParams();
-  const { appointments, isLoading, fetchAppointments, setAppointments } = useAppointments();
+  const {
+    appointments,
+    isLoading,
+    fetchAppointments,
+    setAppointments,
+    customerMissedStatus,
+    updateCustomerMissedStatus,
+  } = useAppointments();
 
   const [displayedItems, setDisplayedItems] = useState(ITEMS_PER_PAGE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -49,8 +56,13 @@ export default function HistoryList({ token }: HistoryListProps) {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    if (token) {
-      fetchAppointments(token, ["FINISHED", "CANCELED"]);
+    const historyStatuses = ["FINISHED", "CANCELED"];
+    const missedFilter = searchParams.get("missed");
+
+    if (missedFilter === "true") {
+      fetchAppointments(token, ["CONFIRMED", "FINISHED", "CANCELED"]);
+    } else {
+      fetchAppointments(token, historyStatuses);
     }
   }, [token, fetchAppointments, searchParams]);
 
@@ -74,30 +86,36 @@ export default function HistoryList({ token }: HistoryListProps) {
         (appointment) => appointment.date === filterDate
       );
     }
+
     if (filterService) {
       filtered = filtered.filter(
         (appointment) => appointment.serviceId._id === filterService
       );
     }
+
     if (filterProfessional) {
       filtered = filtered.filter(
         (appointment) => appointment.professionalId._id === filterProfessional
       );
     }
+
     if (filterMissed === "true") {
       filtered = filtered.filter(
-        (appointment) => appointment.isMissed === true
+        (appointment) =>
+          customerMissedStatus[appointment.customerEmail] === true
       );
     } else if (filterMissed === "false") {
       filtered = filtered.filter(
-        (appointment) => appointment.isMissed === false
+        (appointment) =>
+          customerMissedStatus[appointment.customerEmail] === false ||
+          customerMissedStatus[appointment.customerEmail] === undefined
       );
     }
 
     return filtered.sort((a, b) => {
       const dateTimeA = new Date(`${a.date}T${a.time}`);
       const dateTimeB = new Date(`${b.date}T${b.time}`);
-      return dateTimeB.getTime() - dateTimeA.getTime(); // Sort in reverse chronological order
+      return dateTimeB.getTime() - dateTimeA.getTime();
     });
   }, [
     appointments,
@@ -105,6 +123,7 @@ export default function HistoryList({ token }: HistoryListProps) {
     filterService,
     filterProfessional,
     filterMissed,
+    customerMissedStatus,
   ]);
 
   const displayedAppointments = useMemo(() => {
@@ -156,53 +175,97 @@ export default function HistoryList({ token }: HistoryListProps) {
     };
   }, []);
 
-  const handleToggleMissed = async (
-    id: string,
-    currentMissedStatus: boolean
-  ) => {
-    if (!token) return;
+  const handleToggleMissed = useCallback(
+    async (
+      id: string,
+      customerEmail: string,
+      currentAppointmentIsMissed: boolean,
+      customerHasOverallMissedFlag: boolean
+    ) => {
+      if (!token) return;
 
-    try {
-      const newMissedStatus = !currentMissedStatus;
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/appointment/toggle-missed/${id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ isMissed: newMissedStatus }),
+      try {
+        if (customerHasOverallMissedFlag) {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/appointments/reset-missed-count/${customerEmail}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            toast("Faltas redefinidas", {
+              description: `Todas as faltas para ${customerEmail} foram redefinidas.`,
+            });
+            // Após redefinir, o cliente não tem mais a flag de falta
+            updateCustomerMissedStatus(customerEmail, false);
+            // Atualizar também todos os agendamentos para este cliente como isMissed: false
+            setAppointments((prevAppointments) =>
+              prevAppointments.map((app) =>
+                app.customerEmail === customerEmail
+                  ? { ...app, isMissed: false }
+                  : app
+              )
+            );
+          } else {
+            toast.error("Erro ao redefinir faltas", {
+              description: "Não foi possível redefinir as faltas do cliente.",
+            });
+          }
+        } else {
+          // Ação: "Marcar com falta" -> chamar toggle-missed para este agendamento específico
+          const newMissedStatus = !currentAppointmentIsMissed; // Isso se tornará true
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/appointment/toggle-missed/${id}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ isMissed: newMissedStatus }),
+            }
+          );
+
+          if (response.ok) {
+            toast("Status de falta atualizado", {
+              description: `Agendamento ${
+                newMissedStatus ? "marcado com falta" : "removido da falta"
+              } com sucesso`,
+            });
+            // Se este agendamento específico for marcado como falta,
+            // atualizar o status geral do cliente para true
+            updateCustomerMissedStatus(customerEmail, newMissedStatus); // Isso se tornará true
+            setAppointments((prevAppointments) =>
+              prevAppointments.map((app) =>
+                app._id === id ? { ...app, isMissed: newMissedStatus } : app
+              )
+            );
+          } else {
+            toast.error("Erro ao atualizar status de falta", {
+              description: "Não foi possível atualizar o status de falta",
+            });
+          }
         }
-      );
-
-      if (response.ok) {
-        toast("Status de falta atualizado", {
-          description: `Agendamento ${
-            newMissedStatus ? "marcado com falta" : "removido da falta"
-          } com sucesso`,
+      } catch (error) {
+        toast.error("Erro de rede", {
+          description: "Não foi possível conectar ao servidor.",
         });
-        // Update the appointment in the local state
-        setAppointments((prevAppointments) =>
-          prevAppointments.map((app) =>
-            app._id === id ? { ...app, isMissed: newMissedStatus } : app
-          )
-        );
-      } else {
-        toast.error("Erro ao atualizar status de falta", {
-          description: "Não foi possível atualizar o status de falta",
-        });
+        console.error("Network error:", error);
       }
-    } catch (error) {
-      toast.error("Erro ao atualizar status de falta", {
-        description: "Não foi possível atualizar o status de falta",
-      });
-    }
-  };
+    },
+    [token, setAppointments, updateCustomerMissedStatus]
+  );
 
   const AppointmentRow = useCallback(
     ({ appointment, index }: { appointment: any; index: number }) => {
       const isLast = index === displayedAppointments.length - 1;
+      const hasCustomerMissedFlag =
+        customerMissedStatus[appointment.customerEmail];
 
       return (
         <TableRow
@@ -236,19 +299,17 @@ export default function HistoryList({ token }: HistoryListProps) {
             </div>
           </TableCell>
           <TableCell>
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                appointment.status === "FINISHED"
-                  ? "bg-primary text-white"
-                  : "bg-primary/10 text-primary/60"
-              }`}
-            >
-              {appointment.status === "FINISHED" ? "Finalizado" : "Cancelado"}
-            </span>
+            {hasCustomerMissedFlag && <Flag className="h-4 w-4 text-red-500" />}
           </TableCell>
-          <TableCell className="text-center">
-            {appointment.isMissed && (
-              <Flag className="h-4 w-4 text-red-500 mx-auto" />
+          <TableCell>
+            {appointment.status === "FINISHED" ? (
+              <div className="bg-primary/80 px-1.5 py-1.5 rounded text-xs text-white text-center">
+                Finished
+              </div>
+            ) : (
+              <div className="bg-primary/30 px-1.5 py-1.5 rounded text-xs text-white text-center">
+                Canceled
+              </div>
             )}
           </TableCell>
           <TableCell>
@@ -262,11 +323,16 @@ export default function HistoryList({ token }: HistoryListProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={() =>
-                    handleToggleMissed(appointment._id, appointment.isMissed)
+                    handleToggleMissed(
+                      appointment._id,
+                      appointment.customerEmail,
+                      appointment.isMissed,
+                      hasCustomerMissedFlag // Passando o novo argumento
+                    )
                   }
                 >
                   <Flag className="mr-2 h-4 w-4" />
-                  {appointment.isMissed ? "Remover falta" : "Marcar com falta"}
+                  {hasCustomerMissedFlag ? "Remover falta" : "Marcar com falta"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -274,12 +340,20 @@ export default function HistoryList({ token }: HistoryListProps) {
         </TableRow>
       );
     },
-    [displayedAppointments.length, hasMore, lastItemRef, handleToggleMissed]
+    [
+      displayedAppointments.length,
+      hasMore,
+      lastItemRef,
+      customerMissedStatus,
+      handleToggleMissed,
+    ]
   );
 
   const AppointmentCard = useCallback(
     ({ appointment, index }: { appointment: any; index: number }) => {
       const isLast = index === displayedAppointments.length - 1;
+      const hasCustomerMissedFlag =
+        customerMissedStatus[appointment.customerEmail];
 
       return (
         <Card
@@ -292,19 +366,22 @@ export default function HistoryList({ token }: HistoryListProps) {
               <span className="truncate flex items-center gap-2">
                 {appointment.serviceId.name}
               </span>
-              <div className="flex gap-2 items-center">
-                {appointment.isMissed && (
-                  <Flag className="h-4 w-4 text-red-500" />
+              <div className="flex gap-2">
+                <div className="my-auto">
+                  {hasCustomerMissedFlag && (
+                    <Flag className="h-4 w-4 text-red-500" />
+                  )}
+                </div>
+                {appointment.status === "FINISHED" ? (
+                  <div className="bg-primary/80 px-1.5 py-1 rounded text-xs text-white grid content-center">
+                    Finished
+                  </div>
+                ) : (
+                  <div className="bg-primary/30 px-1.5 py-1 rounded text-xs text-white grid content-center">
+                    Canceled
+                  </div>
                 )}
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    appointment.status === "FINISHED"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {appointment.status === "FINISHED" ? "Finalizado" : "Cancelado"}
-                </span>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -320,12 +397,14 @@ export default function HistoryList({ token }: HistoryListProps) {
                       onClick={() =>
                         handleToggleMissed(
                           appointment._id,
-                          appointment.isMissed
+                          appointment.customerEmail,
+                          appointment.isMissed,
+                          hasCustomerMissedFlag // Passando o novo argumento
                         )
                       }
                     >
                       <Flag className="mr-2 h-4 w-4" />
-                      {appointment.isMissed
+                      {hasCustomerMissedFlag
                         ? "Remover falta"
                         : "Marcar com falta"}
                     </DropdownMenuItem>
@@ -356,7 +435,13 @@ export default function HistoryList({ token }: HistoryListProps) {
         </Card>
       );
     },
-    [displayedAppointments.length, hasMore, lastItemRef, handleToggleMissed]
+    [
+      displayedAppointments.length,
+      hasMore,
+      lastItemRef,
+      customerMissedStatus,
+      handleToggleMissed,
+    ]
   );
 
   if (isLoading) {
@@ -368,16 +453,15 @@ export default function HistoryList({ token }: HistoryListProps) {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full flex flex-col">
       {filteredAppointments.length > 0 && (
-        <div className="mb-4 text-sm text-muted-foreground">
+        <div className="mb-4 text-sm text-muted-foreground flex-shrink-0">
           Mostrando {displayedAppointments.length} de{" "}
           {filteredAppointments.length} agendamentos
         </div>
       )}
-      <ScrollArea className="h-[55vh] md:h-[600px]">
+      <ScrollArea className="h-[56vh] md:h-[600px]">
         <div className="hidden md:block">
-          {/* Versão para telas maiores */}
           <Table>
             <TableHeader>
               <TableRow>
@@ -387,8 +471,8 @@ export default function HistoryList({ token }: HistoryListProps) {
                 <TableHead className="w-[10%]">Hora</TableHead>
                 <TableHead className="w-[18%]">Cliente</TableHead>
                 <TableHead className="w-[12%]">Tel</TableHead>
+                <TableHead className="w-[5%]">Falta</TableHead>
                 <TableHead className="w-[5%]">Status</TableHead>
-                <TableHead className="w-[2%] text-center"><Flag className="w-4 h-4"/></TableHead>
                 <TableHead className="w-[5%]">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -404,7 +488,7 @@ export default function HistoryList({ token }: HistoryListProps) {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={9} // Adjusted colspan
+                    colSpan={7}
                     className="text-center text-muted-foreground"
                   >
                     Nenhum agendamento encontrado.
@@ -432,7 +516,6 @@ export default function HistoryList({ token }: HistoryListProps) {
           )}
         </div>
 
-        {/* Versão mobile */}
         <div className="md:hidden space-y-2">
           {displayedAppointments.length > 0 ? (
             displayedAppointments.map((appointment, index) => (

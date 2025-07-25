@@ -27,6 +27,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useAppointments } from "@/hooks/appointments-context"; 
+
+interface HistoryFiltersProps {
+  token: string | undefined;
+}
 
 const formatDateToLocalString = (date: Date): string => {
   const year = date.getFullYear();
@@ -35,53 +40,29 @@ const formatDateToLocalString = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-export function HistoryFilters() {
+export function HistoryFilters({token}: HistoryFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [date, setDate] = useState<Date | undefined>(
-    searchParams.get("date")
-      ? new Date(searchParams.get("date") as string)
-      : undefined
-  );
-  const [service, setService] = useState<string>(
-    searchParams.get("service") || ""
-  );
-  const [professional, setProfessional] = useState<string>(
-    searchParams.get("professional") || ""
-  );
-  const [missed, setMissed] = useState<string>(searchParams.get("missed") || ""); // Add missed state
-
-  const [services, setServices] = useState<{ _id: string; name: string }[]>([]);
-  const [professionals, setProfessionals] = useState<
-    { _id: string; name: string }[]
-  >([]);
+ 
   const [isLoading, setIsLoading] = useState(true);
+
+  const { services, professionals, fetchServicesAndProfessionals, fetchCategories } = useAppointments()
+
+  const [date, setDate] = useState<Date | undefined>(
+    searchParams.get("date") ? new Date(searchParams.get("date") as string) : undefined,
+  );
+  const [service, setService] = useState<string>(searchParams.get("service") || "");
+  const [professional, setProfessional] = useState<string>(searchParams.get("professional") || "");
+  const [missed, setMissed] = useState<string>(searchParams.get("missed") || ""); 
 
   useEffect(() => {
     const fetchFiltersData = async () => {
-      try {
-        const [servicesRes, professionalsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/services`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/professionals`),
-        ]);
-
-        if (servicesRes.ok && professionalsRes.ok) {
-          const servicesData = await servicesRes.json();
-          const professionalsData = await professionalsRes.json();
-
-          setServices(servicesData);
-          setProfessionals(professionalsData);
-        }
-      } catch (error) {
-        console.error("Error fetching filter data:", error);
-      } finally {
-        setIsLoading(false);
-      }
+        fetchServicesAndProfessionals(token),
+        fetchCategories(token)
     };
-
     fetchFiltersData();
-  }, []);
+  }, [token, fetchServicesAndProfessionals, fetchCategories]);
 
   const applyFilters = () => {
     const params = new URLSearchParams();
