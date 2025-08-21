@@ -53,7 +53,7 @@ export function LoginForm() {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Entre com suas credenciais ou crie uma conta de profissional para aceder ao sistema</CardDescription>
+          <CardDescription>Entre com suas credenciais de profissional.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <CardContent className="space-y-4">
@@ -79,7 +79,7 @@ export function LoginForm() {
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-2">
+          <CardFooter className="mt-4 mb-4">
             <Button type="submit" className="w-full bg-gray-950 text-gray-50" disabled={isLoading}>
               {isLoading ? (
                 <>
@@ -89,9 +89,6 @@ export function LoginForm() {
               ) : (
                 "Entrar"
               )}
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => setIsRegisterOpen(true)}>
-              Criar conta
             </Button>
           </CardFooter>
         </form>
