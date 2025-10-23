@@ -27,7 +27,6 @@ import {
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAppointments } from "@/hooks/appointments-context";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,38 +79,34 @@ export function AppointmentList({ token }: AppointmentListProps) {
   >(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const [date, setDate] = useState<Date | undefined>(
-    searchParams.get("date")
-      ? new Date(searchParams.get("date") as string)
-      : undefined
-  );
+  // Derivando o valor de data diretamente dos searchParams
+  const dateFromParams = searchParams.get("date");
+  const currentDateFilter = dateFromParams ? new Date(dateFromParams) : undefined;
 
-   const setToday = () => {
-      router.push(
-        `/dashboard/appointments?date=${formatDateToLocalString(new Date())}`
-      );
-      setDate(new Date());
-    };
-  
-    const setTomorrow = () => {
-      router.push(
-        `/dashboard/appointments?date=${formatDateToLocalString(
-          addDays(new Date(), 1)
-        )}`
-      );
-      setDate(addDays(new Date(), 1));
-    };
+  const setToday = useCallback(() => {
+    router.push(
+      `/dashboard/appointments?date=${formatDateToLocalString(new Date())}`
+    );
+  }, [router]);
+
+  const setTomorrow = useCallback(() => {
+    router.push(
+      `/dashboard/appointments?date=${formatDateToLocalString(
+        addDays(new Date(), 1)
+      )}`
+    );
+  }, [router]);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // V3: Único useEffect para carregar agendamentos e resetar paginação ao mudar os filtros (searchParams)
   useEffect(() => {
     const currentStatuses = ["CONFIRMED"];
     fetchAppointments(token, currentStatuses);
-  }, [token, fetchAppointments]);
 
-  useEffect(() => {
+    // Resetar a paginação ao mudar os searchParams (filtros)
     setDisplayedItems(ITEMS_PER_PAGE);
-  }, [searchParams]);
+  }, [token, fetchAppointments, searchParams]);
 
   const filterDate = searchParams.get("date");
   const filterService = searchParams.get("service");
@@ -209,6 +204,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
     [isLoadingMore, hasMore, loadMoreItems]
   );
 
+  // Cleanup do IntersectionObserver
   useEffect(() => {
     return () => {
       if (observerRef.current) {
@@ -304,19 +300,18 @@ export function AppointmentList({ token }: AppointmentListProps) {
     [token, setAppointments]
   );
 
-  // Modificação da handleToggleMissed para chamar reset-missed-count
   const handleToggleMissed = useCallback(
     async (
-      id: string, // ID do agendamento específico (usado para toggle-missed)
+      id: string,
       customerEmail: string,
-      currentAppointmentIsMissed: boolean, // isMissed deste agendamento específico
-      customerHasOverallMissedFlag: boolean // Status geral de falta do cliente
+      currentAppointmentIsMissed: boolean,
+      customerHasOverallMissedFlag: boolean
     ) => {
       if (!token) return;
 
       try {
         if (customerHasOverallMissedFlag) {
-          // Ação: "Remover falta" -> chamar reset-missed-count para o email do cliente
+          // Ação: "Remover falta" -> chamar reset-missed-count
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/appointments/reset-missed-count/${customerEmail}`,
             {
@@ -346,8 +341,8 @@ export function AppointmentList({ token }: AppointmentListProps) {
             });
           }
         } else {
-          // Ação: "Marcar com falta" -> chamar toggle-missed para este agendamento específico
-          const newMissedStatus = !currentAppointmentIsMissed; // Isso se tornará true
+          // Ação: "Marcar com falta" -> chamar toggle-missed
+          const newMissedStatus = !currentAppointmentIsMissed;
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/appointment/toggle-missed/${id}`,
             {
@@ -366,8 +361,6 @@ export function AppointmentList({ token }: AppointmentListProps) {
                 newMissedStatus ? "marcado com falta" : "removido da falta"
               } com sucesso`,
             });
-            // Se este agendamento específico for marcado como falta,
-            // atualizar o status geral do cliente para true
             updateCustomerMissedStatus(customerEmail, newMissedStatus);
             setAppointments((prevAppointments) =>
               prevAppointments.map((app) =>
@@ -455,7 +448,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
                       appointment._id,
                       appointment.customerEmail,
                       appointment.isMissed,
-                      hasCustomerMissedFlag // Passando o novo argumento
+                      hasCustomerMissedFlag
                     )
                   }
                 >
@@ -529,7 +522,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
                           appointment._id,
                           appointment.customerEmail,
                           appointment.isMissed,
-                          hasCustomerMissedFlag // Passando o novo argumento
+                          hasCustomerMissedFlag
                         )
                       }
                     >
@@ -596,7 +589,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
     <div className="w-full h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <div className="md:hidden">
-          <QuickFilter setToday={setToday} setTomorrow={setTomorrow} date={date}/>
+          <QuickFilter setToday={setToday} setTomorrow={setTomorrow} date={currentDateFilter}/>
         </div>
         {filteredAppointments.length > 0 && (
           <div className="text-sm text-muted-foreground flex-shrink-0">
