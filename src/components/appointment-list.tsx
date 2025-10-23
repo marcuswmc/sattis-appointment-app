@@ -564,9 +564,9 @@ export function AppointmentList({ token }: AppointmentListProps) {
               </div>
               <div className="text-xs font-medium text-gray-800 flex items-center gap-1">
                 <PhoneIcon className="h-3 w-3 text-gray-500" />
-                <a href={`callto:${appointment.customerPhone}`}>
+                <p>
                   {appointment.customerPhone}
-                </a>
+                </p>
               </div>
             </div>
           </CardContent>
