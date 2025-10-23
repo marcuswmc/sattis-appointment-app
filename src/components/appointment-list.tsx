@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,6 +22,7 @@ import {
   Phone,
   User,
   Flag,
+  PhoneIcon,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -44,6 +45,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "./ui/scroll-area";
+import { QuickFilter } from "./quick-filter";
+import { addDays } from "date-fns";
 
 interface AppointmentListProps {
   token: string | undefined;
@@ -51,8 +54,16 @@ interface AppointmentListProps {
 
 const ITEMS_PER_PAGE = 20;
 
+const formatDateToLocalString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export function AppointmentList({ token }: AppointmentListProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const {
     appointments,
     isLoading,
@@ -68,6 +79,28 @@ export function AppointmentList({ token }: AppointmentListProps) {
     string | null
   >(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const [date, setDate] = useState<Date | undefined>(
+    searchParams.get("date")
+      ? new Date(searchParams.get("date") as string)
+      : undefined
+  );
+
+   const setToday = () => {
+      router.push(
+        `/dashboard/appointments?date=${formatDateToLocalString(new Date())}`
+      );
+      setDate(new Date());
+    };
+  
+    const setTomorrow = () => {
+      router.push(
+        `/dashboard/appointments?date=${formatDateToLocalString(
+          addDays(new Date(), 1)
+        )}`
+      );
+      setDate(addDays(new Date(), 1));
+    };
 
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -524,9 +557,17 @@ export function AppointmentList({ token }: AppointmentListProps) {
                 {appointment.time}
               </span>
             </div>
-            <div className="text-xs font-medium text-gray-800 flex items-center gap-1">
-              <User className="h-3 w-3 text-gray-500" />
-              <span className="truncate">{appointment.customerName}</span>
+            <div className="flex gap-4 items-center">
+              <div className="text-xs font-medium text-gray-800 flex items-center gap-1">
+                <User className="h-3 w-3 text-gray-500" />
+                <span className="truncate">{appointment.customerName}</span>
+              </div>
+              <div className="text-xs font-medium text-gray-800 flex items-center gap-1">
+                <PhoneIcon className="h-3 w-3 text-gray-500" />
+                <p>
+                  {appointment.customerPhone}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -553,12 +594,17 @@ export function AppointmentList({ token }: AppointmentListProps) {
 
   return (
     <div className="w-full h-full flex flex-col">
-      {filteredAppointments.length > 0 && (
-        <div className="mb-4 text-sm text-muted-foreground flex-shrink-0">
-          Mostrando {displayedAppointments.length} de{" "}
-          {filteredAppointments.length} agendamentos
+      <div className="flex justify-between items-center mb-4">
+        <div className="md:hidden">
+          <QuickFilter setToday={setToday} setTomorrow={setTomorrow} date={date}/>
         </div>
-      )}
+        {filteredAppointments.length > 0 && (
+          <div className="text-sm text-muted-foreground flex-shrink-0">
+            Mostrando {displayedAppointments.length} de{" "}
+            {filteredAppointments.length}
+          </div>
+        )}
+      </div>
       <ScrollArea className="h-[56vh] md:h-[600px]">
         <div className="hidden md:block">
           <Table>
