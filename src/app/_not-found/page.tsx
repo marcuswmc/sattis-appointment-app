@@ -1,16 +1,6 @@
-"use client"
-
-import { Suspense } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 
-// Componente para lidar com search params
-function SearchParamsHandler() {
-  const searchParams = useSearchParams()
-  return null
-}
-
-function NotFoundContent() {
+export default function NotFoundPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
       <h1 className="text-4xl font-bold mb-4">404 - Página não encontrada</h1>
@@ -23,16 +13,5 @@ function NotFoundContent() {
         Voltar para a página inicial
       </Link>
     </div>
-  )
-}
-
-export default function NotFoundPage() {
-  return (
-    <Suspense fallback={null}>
-      <>
-        <SearchParamsHandler />
-        <NotFoundContent />
-      </>
-    </Suspense>
   )
 }

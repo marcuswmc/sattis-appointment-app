@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react"; // Adicionado useEffect
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect, Suspense } from "react"; // Adicionado useEffect
 import { useSearchParams } from "next/navigation";
 
 export interface Category {
@@ -71,7 +71,7 @@ const defaultContext: AppointmentsContextType = {
 
 const AppointmentsContext = createContext<AppointmentsContextType>(defaultContext);
 
-export function AppointmentsProvider({ children }: { children: ReactNode }) {
+function AppointmentsProviderInner({ children }: { children: ReactNode }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -244,6 +244,14 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </AppointmentsContext.Provider>
+  );
+}
+
+export function AppointmentsProvider({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={children}>
+      <AppointmentsProviderInner>{children}</AppointmentsProviderInner>
+    </Suspense>
   );
 }
 

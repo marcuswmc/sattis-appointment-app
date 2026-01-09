@@ -639,7 +639,7 @@ export function AppointmentList({ token }: AppointmentListProps) {
           </Table>
         </div>
 
-        <div className="flex items-center justify-between px-4">
+        <div className="flex items-center justify-between px-4 pb-4">
           <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
             {table.getFilteredSelectedRowModel().rows.length} de{" "}
             {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
