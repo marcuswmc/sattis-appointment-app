@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react"; // Adicionado useEffect
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect, Suspense } from "react"; // Adicionado useEffect
 import { useSearchParams } from "next/navigation";
 
 export interface Category {
@@ -32,7 +32,8 @@ export interface Appointment {
   time: string;
   status: string;
   customerName: string;
-  customerEmail: string; // Garantir que customerEmail está presente
+  customerEmail: string;
+  customerPhone: string;
   serviceId: Service;
   professionalId: Professional;
 }
@@ -43,7 +44,7 @@ type AppointmentsContextType = {
   services: Service[];
   professionals: Professional[];
   categories: Category[];
-  customerMissedStatus: Record<string, boolean>; // Novo: Mapa de email para status de falta
+  customerMissedStatus: Record<string, boolean>; 
   isLoading: boolean;
   fetchAppointments: (token: string | undefined, statuses?: string[]) => Promise<void>;
   fetchServicesAndProfessionals: (token: string | undefined) => Promise<void>;
@@ -70,7 +71,7 @@ const defaultContext: AppointmentsContextType = {
 
 const AppointmentsContext = createContext<AppointmentsContextType>(defaultContext);
 
-export function AppointmentsProvider({ children }: { children: ReactNode }) {
+function AppointmentsProviderInner({ children }: { children: ReactNode }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -232,17 +233,25 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         services,
         professionals,
         categories,
-        customerMissedStatus, // Adicionado ao contexto
+        customerMissedStatus,
         isLoading,
         fetchAppointments,
         fetchServicesAndProfessionals,
         fetchCategories,
         setAppointments,
-        updateCustomerMissedStatus, // Adicionado ao contexto
+        updateCustomerMissedStatus,
       }}
     >
       {children}
     </AppointmentsContext.Provider>
+  );
+}
+
+export function AppointmentsProvider({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={children}>
+      <AppointmentsProviderInner>{children}</AppointmentsProviderInner>
+    </Suspense>
   );
 }
 
