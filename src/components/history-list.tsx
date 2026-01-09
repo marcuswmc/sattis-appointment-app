@@ -31,7 +31,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "./ui/scroll-area";
 
 interface HistoryListProps {
   token: string | undefined;
@@ -270,31 +269,30 @@ export default function HistoryList({ token }: HistoryListProps) {
       return (
         <TableRow
           ref={isLast && hasMore ? lastItemRef : null}
-          className="hover:bg-gray-100 transition-colors"
         >
           <TableCell>{appointment.serviceId.name}</TableCell>
           <TableCell>{appointment.professionalId.name}</TableCell>
           <TableCell>
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3 w-3 text-gray-500" />
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="h-3 w-3" />
               {formatDate(appointment.date)}
             </div>
           </TableCell>
           <TableCell>
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-3 w-3 text-gray-500" />
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Clock className="h-3 w-3" />
               {appointment.time}
             </div>
           </TableCell>
           <TableCell>
-            <div className="flex items-center gap-1.5 w-[140px]">
-              <User className="h-3 w-3 text-gray-500" />
+            <div className="flex items-center gap-1.5 w-[140px] text-muted-foreground">
+              <User className="h-3 w-3" />
               <p className="truncate">{appointment.customerName}</p>
             </div>
           </TableCell>
           <TableCell>
-            <div className="flex items-center gap-1.5">
-              <Phone className="h-3 w-3 text-gray-500" />
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Phone className="h-3 w-3" />
               {appointment.customerPhone}
             </div>
           </TableCell>
@@ -315,9 +313,13 @@ export default function HistoryList({ token }: HistoryListProps) {
           <TableCell>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Abrir menu</span>
+                <Button
+                  variant="ghost"
+                  className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+                  size="icon"
+                >
                   <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Abrir menu</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -359,7 +361,7 @@ export default function HistoryList({ token }: HistoryListProps) {
         <Card
           key={appointment._id}
           ref={isLast && hasMore ? lastItemRef : null}
-          className="border border-gray-200 py-2 px-3"
+          className="py-2 px-3"
         >
           <CardHeader className="pb-1 pt-0 px-0">
             <CardTitle className="text-sm font-semibold flex justify-between items-center">
@@ -373,11 +375,11 @@ export default function HistoryList({ token }: HistoryListProps) {
                   )}
                 </div>
                 {appointment.status === "FINISHED" ? (
-                  <div className="bg-primary/80 px-1.5 py-1 rounded text-xs text-white grid content-center">
+                  <div className="text-xs grid content-center">
                     Finished
                   </div>
                 ) : (
-                  <div className="bg-primary/30 px-1.5 py-1 rounded text-xs text-white grid content-center">
+                  <div className="text-xs grid content-center">
                     Canceled
                   </div>
                 )}
@@ -412,14 +414,14 @@ export default function HistoryList({ token }: HistoryListProps) {
                 </DropdownMenu>
               </div>
             </CardTitle>
-            <p className="text-xs text-gray-700 truncate">
+            <p className="text-xs truncate">
               {appointment.professionalId.name}
             </p>
           </CardHeader>
           <CardContent className="pt-1 px-0 pb-0">
-            <div className="flex justify-between items-center text-xs text-gray-600 mb-1">
+            <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
               <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3 text-gray-500" />
+                <Calendar className="h-3 w-3" />
                 {formatDate(appointment.date)}
               </span>
               <span className="flex items-center gap-1">
@@ -427,8 +429,8 @@ export default function HistoryList({ token }: HistoryListProps) {
                 {appointment.time}
               </span>
             </div>
-            <div className="text-xs font-medium text-gray-800 flex items-center gap-1">
-              <User className="h-3 w-3 text-gray-500" />
+            <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <User className="h-3 w-3" />
               <span className="truncate">{appointment.customerName}</span>
             </div>
           </CardContent>
@@ -453,106 +455,102 @@ export default function HistoryList({ token }: HistoryListProps) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {filteredAppointments.length > 0 && (
-        <div className="mb-4 text-sm text-muted-foreground flex-shrink-0">
-          Mostrando {displayedAppointments.length} de{" "}
-          {filteredAppointments.length} agendamentos
-        </div>
-      )}
-      <ScrollArea className="h-[56vh] md:h-[600px]">
-        <div className="hidden md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[18%]">Serviço</TableHead>
-                <TableHead className="w-[15%]">Profissional</TableHead>
-                <TableHead className="w-[12%]">Data</TableHead>
-                <TableHead className="w-[10%]">Hora</TableHead>
-                <TableHead className="w-[18%]">Cliente</TableHead>
-                <TableHead className="w-[12%]">Tel</TableHead>
-                <TableHead className="w-[5%]">Falta</TableHead>
-                <TableHead className="w-[5%]">Status</TableHead>
-                <TableHead className="w-[5%]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayedAppointments.length > 0 ? (
-                displayedAppointments.map((appointment, index) => (
-                  <AppointmentRow
-                    key={appointment._id}
-                    appointment={appointment}
-                    index={index}
-                  />
-                ))
-              ) : (
+    <div className="w-full h-full flex flex-col gap-4">
+      <div className="relative flex flex-col gap-4 overflow-auto">
+        <div className="overflow-hidden rounded-lg border">
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader className="bg-muted sticky top-0 z-10">
                 <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center text-muted-foreground"
-                  >
-                    Nenhum agendamento encontrado.
-                  </TableCell>
+                  <TableHead className="w-[18%]">Serviço</TableHead>
+                  <TableHead className="w-[15%]">Profissional</TableHead>
+                  <TableHead className="w-[12%]">Data</TableHead>
+                  <TableHead className="w-[10%]">Hora</TableHead>
+                  <TableHead className="w-[18%]">Cliente</TableHead>
+                  <TableHead className="w-[12%]">Tel</TableHead>
+                  <TableHead className="w-[5%]">Falta</TableHead>
+                  <TableHead className="w-[5%]">Status</TableHead>
+                  <TableHead className="w-[5%]">Ações</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-
-          {isLoadingMore && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
-              <span className="text-sm text-muted-foreground">
-                Carregando...
-              </span>
-            </div>
-          )}
-
-          {hasMore && !isLoadingMore && displayedAppointments.length > 0 && (
-            <div className="flex justify-center py-6">
-              <Button variant="outline" onClick={loadMoreItems} className="">
-                Carregar mais
-              </Button>
-            </div>
-          )}
+              </TableHeader>
+              <TableBody>
+                {displayedAppointments.length > 0 ? (
+                  displayedAppointments.map((appointment, index) => (
+                    <AppointmentRow
+                      key={appointment._id}
+                      appointment={appointment}
+                      index={index}
+                    />
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={9}
+                      className="h-24 text-center"
+                    >
+                      Nenhum agendamento encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
 
-        <div className="md:hidden space-y-2">
-          {displayedAppointments.length > 0 ? (
-            displayedAppointments.map((appointment, index) => (
-              <AppointmentCard
-                key={appointment._id}
-                appointment={appointment}
-                index={index}
-              />
-            ))
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum agendamento encontrado.
-            </div>
-          )}
+        {isLoadingMore && (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+            <span className="text-sm text-muted-foreground">
+              Carregando...
+            </span>
+          </div>
+        )}
 
-          {isLoadingMore && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
-              <span className="text-sm text-muted-foreground">
-                Carregando mais agendamentos...
-              </span>
-            </div>
-          )}
+        {hasMore && !isLoadingMore && displayedAppointments.length > 0 && (
+          <div className="flex justify-center py-6">
+            <Button variant="outline" onClick={loadMoreItems} className="">
+              Carregar mais
+            </Button>
+          </div>
+        )}
+      </div>
 
-          {hasMore && !isLoadingMore && displayedAppointments.length > 0 && (
-            <div className="flex justify-center py-4">
-              <Button
-                variant="outline"
-                onClick={loadMoreItems}
-                className="w-full"
-              >
-                Carregar mais agendamentos
-              </Button>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+      <div className="md:hidden space-y-2">
+        {displayedAppointments.length > 0 ? (
+          displayedAppointments.map((appointment, index) => (
+            <AppointmentCard
+              key={appointment._id}
+              appointment={appointment}
+              index={index}
+            />
+          ))
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhum agendamento encontrado.
+          </div>
+        )}
+
+        {isLoadingMore && (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+            <span className="text-sm text-muted-foreground">
+              Carregando mais agendamentos...
+            </span>
+          </div>
+        )}
+
+        {hasMore && !isLoadingMore && displayedAppointments.length > 0 && (
+          <div className="flex justify-center py-4">
+            <Button
+              variant="outline"
+              onClick={loadMoreItems}
+              className="w-full"
+            >
+              Carregar mais agendamentos
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

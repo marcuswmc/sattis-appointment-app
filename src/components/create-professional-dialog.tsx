@@ -216,7 +216,7 @@ export function CreateProfessionalDialog({
             </div>
 
             <div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-neutral-600">
                 Adicione a imagem que será exibida ao cliente no momento da marcação.
               </p>
             </div>

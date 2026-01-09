@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -22,11 +21,16 @@ import {
   Phone,
   User,
   Flag,
-  PhoneIcon,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  LayoutGrid,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
-import { useAppointments } from "@/hooks/appointments-context";
+import { useAppointments, type Appointment } from "@/hooks/appointments-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,19 +43,38 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "./ui/scroll-area";
 import { QuickFilter } from "./quick-filter";
 import { addDays } from "date-fns";
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type Row,
+  type SortingState,
+  type VisibilityState,
+} from "@tanstack/react-table";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AppointmentListProps {
   token: string | undefined;
 }
-
-const ITEMS_PER_PAGE = 20;
 
 const formatDateToLocalString = (date: Date): string => {
   const year = date.getFullYear();
@@ -72,12 +95,24 @@ export function AppointmentList({ token }: AppointmentListProps) {
     updateCustomerMissedStatus,
   } = useAppointments();
 
-  const [displayedItems, setDisplayedItems] = useState(ITEMS_PER_PAGE);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<
     string | null
   >(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [rowSelection, setRowSelection] = useState({});
+  const [columnVisibility, setColumnVisibility] =
+    useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    {
+      id: "date",
+      desc: false,
+    },
+  ]);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 20,
+  });
 
   // Derivando o valor de data diretamente dos searchParams
   const dateFromParams = searchParams.get("date");
@@ -97,15 +132,10 @@ export function AppointmentList({ token }: AppointmentListProps) {
     );
   }, [router]);
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
-  // V3: Único useEffect para carregar agendamentos e resetar paginação ao mudar os filtros (searchParams)
+  // Único useEffect para carregar agendamentos ao mudar os filtros (searchParams)
   useEffect(() => {
     const currentStatuses = ["CONFIRMED"];
     fetchAppointments(token, currentStatuses);
-
-    // Resetar a paginação ao mudar os searchParams (filtros)
-    setDisplayedItems(ITEMS_PER_PAGE);
   }, [token, fetchAppointments, searchParams]);
 
   const filterDate = searchParams.get("date");
@@ -162,56 +192,6 @@ export function AppointmentList({ token }: AppointmentListProps) {
     filterMissed,
     customerMissedStatus,
   ]);
-
-  const displayedAppointments = useMemo(() => {
-    return filteredAppointments.slice(0, displayedItems);
-  }, [filteredAppointments, displayedItems]);
-
-  const hasMore = displayedItems < filteredAppointments.length;
-
-  const loadMoreItems = useCallback(() => {
-    if (!hasMore || isLoadingMore) return;
-
-    setIsLoadingMore(true);
-
-    setTimeout(() => {
-      setDisplayedItems((prev) =>
-        Math.min(prev + ITEMS_PER_PAGE, filteredAppointments.length)
-      );
-      setIsLoadingMore(false);
-    }, 200);
-  }, [hasMore, isLoadingMore, filteredAppointments.length]);
-
-  const lastItemRef = useCallback(
-    (node: HTMLElement | null) => {
-      if (isLoadingMore) return;
-      if (observerRef.current) observerRef.current.disconnect();
-
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore) {
-            loadMoreItems();
-          }
-        },
-        {
-          threshold: 0.1,
-          rootMargin: "100px",
-        }
-      );
-
-      if (node) observerRef.current.observe(node);
-    },
-    [isLoadingMore, hasMore, loadMoreItems]
-  );
-
-  // Cleanup do IntersectionObserver
-  useEffect(() => {
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, []);
 
   const handleCancelAppointment = useCallback((id: string) => {
     setSelectedAppointmentId(id);
@@ -383,52 +363,104 @@ export function AppointmentList({ token }: AppointmentListProps) {
     [token, setAppointments, updateCustomerMissedStatus]
   );
 
-  const AppointmentRow = useCallback(
-    ({ appointment, index }: { appointment: any; index: number }) => {
-      const isLast = index === displayedAppointments.length - 1;
-      const hasCustomerMissedFlag =
-        customerMissedStatus[appointment.customerEmail];
+  const columns: ColumnDef<Appointment>[] = useMemo(
+    () => [
+      {
+        accessorKey: "serviceId",
+        header: "Serviço",
+        cell: ({ row }) => {
+          return <div>{row.original.serviceId.name}</div>;
+        },
+        enableHiding: false,
+      },
+      {
+        accessorKey: "professionalId",
+        header: "Profissional",
+        cell: ({ row }) => {
+          return <div>{row.original.professionalId.name}</div>;
+        },
+      },
+      {
+        accessorKey: "date",
+        header: "Data",
+        cell: ({ row }) => {
+          return (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              {formatDate(row.original.date)}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "time",
+        header: "Hora",
+        cell: ({ row }) => {
+          return (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {row.original.time}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "customerName",
+        header: "Cliente",
+        cell: ({ row }) => {
+          return (
+            <div className="flex items-center gap-1.5 w-[140px] text-muted-foreground">
+              <User className="h-3 w-3" />
+              <p className="truncate">{row.original.customerName}</p>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "customerPhone",
+        header: "Tel",
+        cell: ({ row }) => {
+          return (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Phone className="h-3 w-3" />
+              {row.original.customerPhone}
+            </div>
+          );
+        },
+      },
+      {
+        id: "missed",
+        header: "Falta",
+        cell: ({ row }) => {
+          const hasCustomerMissedFlag =
+            customerMissedStatus[row.original.customerEmail];
+          return (
+            <div>
+              {hasCustomerMissedFlag && (
+                <Flag className="h-4 w-4 text-red-500" />
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Ações",
+        cell: ({ row }) => {
+          const appointment = row.original;
+          const hasCustomerMissedFlag =
+            customerMissedStatus[appointment.customerEmail];
 
-      return (
-        <TableRow
-          ref={isLast && hasMore ? lastItemRef : null}
-          className="hover:bg-gray-100 transition-colors"
-        >
-          <TableCell>{appointment.serviceId.name}</TableCell>
-          <TableCell>{appointment.professionalId.name}</TableCell>
-          <TableCell>
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3 w-3 text-gray-500" />
-              {formatDate(appointment.date)}
-            </div>
-          </TableCell>
-          <TableCell>
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-3 w-3 text-gray-500" />
-              {appointment.time}
-            </div>
-          </TableCell>
-          <TableCell>
-            <div className="flex items-center gap-1.5 w-[140px]">
-              <User className="h-3 w-3 text-gray-500" />
-              <p className="truncate">{appointment.customerName}</p>
-            </div>
-          </TableCell>
-          <TableCell>
-            <div className="flex items-center gap-1.5">
-              <Phone className="h-3 w-3 text-gray-500" />
-              {appointment.customerPhone}
-            </div>
-          </TableCell>
-          <TableCell>
-            {hasCustomerMissedFlag && <Flag className="h-4 w-4 text-red-500" />}
-          </TableCell>
-          <TableCell>
+          return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Abrir menu</span>
+                <Button
+                  variant="ghost"
+                  className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+                  size="icon"
+                >
                   <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Abrir menu</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -453,129 +485,42 @@ export function AppointmentList({ token }: AppointmentListProps) {
                   }
                 >
                   <Flag className="mr-2 h-4 w-4" />
-                  {hasCustomerMissedFlag ? "Remover falta" : "Marcar com falta"}
+                  {hasCustomerMissedFlag
+                    ? "Remover falta"
+                    : "Marcar com falta"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </TableCell>
-        </TableRow>
-      );
-    },
-    [
-      displayedAppointments.length,
-      hasMore,
-      lastItemRef,
-      handleFinishAppointment,
-      handleCancelAppointment,
-      handleToggleMissed,
-      customerMissedStatus,
-    ]
+          );
+        },
+        enableHiding: false,
+      },
+    ],
+    [customerMissedStatus, handleFinishAppointment, handleCancelAppointment, handleToggleMissed]
   );
 
-  const AppointmentCard = useCallback(
-    ({ appointment, index }: { appointment: any; index: number }) => {
-      const isLast = index === displayedAppointments.length - 1;
-      const hasCustomerMissedFlag =
-        customerMissedStatus[appointment.customerEmail];
-
-      return (
-        <Card
-          key={appointment._id}
-          ref={isLast && hasMore ? lastItemRef : null}
-          className="border border-gray-200 py-2 px-3"
-        >
-          <CardHeader className="pb-1 pt-0 px-0">
-            <CardTitle className="text-sm font-semibold flex justify-between items-center">
-              <span className="truncate flex items-center gap-2">
-                {appointment.serviceId.name}
-              </span>
-              <div className="flex gap-2">
-                <div className="my-auto">
-                  {hasCustomerMissedFlag && (
-                    <Flag className="h-4 w-4 text-red-500" />
-                  )}
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="h-8 w-8 border p-0 bg-primary-foreground"
-                    >
-                      <span className="sr-only">Abrir menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => handleFinishAppointment(appointment._id)}
-                    >
-                      <Check className="mr-2 h-4 w-4" /> Finalizar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleCancelAppointment(appointment._id)}
-                    >
-                      <X className="mr-2 h-4 w-4" /> Cancelar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleToggleMissed(
-                          appointment._id,
-                          appointment.customerEmail,
-                          appointment.isMissed,
-                          hasCustomerMissedFlag
-                        )
-                      }
-                    >
-                      <Flag className="mr-2 h-4 w-4" />
-                      {hasCustomerMissedFlag
-                        ? "Remover falta"
-                        : "Marcar com falta"}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardTitle>
-            <p className="text-xs text-gray-700 truncate">
-              {appointment.professionalId.name}
-            </p>
-          </CardHeader>
-          <CardContent className="pt-1 px-0 pb-0">
-            <div className="flex justify-between items-center text-xs text-gray-600 mb-1">
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3 text-gray-500" />
-                {formatDate(appointment.date)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3 text-gray-500" />
-                {appointment.time}
-              </span>
-            </div>
-            <div className="flex gap-4 items-center">
-              <div className="text-xs font-medium text-gray-800 flex items-center gap-1">
-                <User className="h-3 w-3 text-gray-500" />
-                <span className="truncate">{appointment.customerName}</span>
-              </div>
-              <div className="text-xs font-medium text-gray-800 flex items-center gap-1">
-                <PhoneIcon className="h-3 w-3 text-gray-500" />
-                <p>
-                  {appointment.customerPhone}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      );
+  const table = useReactTable({
+    data: filteredAppointments,
+    columns,
+    state: {
+      sorting,
+      columnVisibility,
+      rowSelection,
+      columnFilters,
+      pagination,
     },
-    [
-      displayedAppointments.length,
-      hasMore,
-      lastItemRef,
-      handleFinishAppointment,
-      handleCancelAppointment,
-      handleToggleMissed,
-      customerMissedStatus,
-    ]
-  );
+    getRowId: (row) => row._id,
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
 
   if (isLoading) {
     return (
@@ -586,47 +531,105 @@ export function AppointmentList({ token }: AppointmentListProps) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
+    <div className="w-full h-full flex flex-col gap-4">
+      <div className="flex items-center justify-between md:justify-end">
         <div className="md:hidden">
-          <QuickFilter setToday={setToday} setTomorrow={setTomorrow} date={currentDateFilter}/>
+          <QuickFilter
+            setToday={setToday}
+            setTomorrow={setTomorrow}
+            date={currentDateFilter}
+          />
         </div>
-        {filteredAppointments.length > 0 && (
-          <div className="text-sm text-muted-foreground flex-shrink-0">
-            Mostrando {displayedAppointments.length} de{" "}
-            {filteredAppointments.length}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <LayoutGrid className="h-4 w-4" />
+                <span className="hidden lg:inline">Personalizar Colunas</span>
+                <span className="lg:hidden">Colunas</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {table
+                .getAllColumns()
+                .filter(
+                  (column) =>
+                    typeof column.accessorFn !== "undefined" &&
+                    column.getCanHide()
+                )
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id === "serviceId"
+                        ? "Serviço"
+                        : column.id === "professionalId"
+                        ? "Profissional"
+                        : column.id === "customerName"
+                        ? "Cliente"
+                        : column.id === "customerPhone"
+                        ? "Tel"
+                        : column.id === "missed"
+                        ? "Falta"
+                        : column.id}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
-      <ScrollArea className="h-[56vh] md:h-[600px]">
-        <div className="hidden md:block">
+
+      <div className="relative flex flex-col gap-4 overflow-auto">
+        <div className="overflow-hidden rounded-lg border">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[18%]">Serviço</TableHead>
-                <TableHead className="w-[15%]">Profissional</TableHead>
-                <TableHead className="w-[12%]">Data</TableHead>
-                <TableHead className="w-[10%]">Hora</TableHead>
-                <TableHead className="w-[18%]">Cliente</TableHead>
-                <TableHead className="w-[12%]">Tel</TableHead>
-                <TableHead className="w-[5%]">Falta</TableHead>
-                <TableHead className="w-[5%]">Ações</TableHead>
-              </TableRow>
+            <TableHeader className="bg-muted sticky top-0 z-10">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id} colSpan={header.colSpan}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
             </TableHeader>
             <TableBody>
-              {displayedAppointments.length > 0 ? (
-                displayedAppointments.map((appointment, index) => (
-                  <AppointmentRow
-                    key={appointment._id}
-                    appointment={appointment}
-                    index={index}
-                  />
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
                 ))
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
-                    className="text-center text-muted-foreground"
+                    colSpan={columns.length}
+                    className="h-24 text-center"
                   >
                     Nenhum agendamento encontrado.
                   </TableCell>
@@ -634,87 +637,111 @@ export function AppointmentList({ token }: AppointmentListProps) {
               )}
             </TableBody>
           </Table>
-
-          {isLoadingMore && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
-              <span className="text-sm text-muted-foreground">
-                Carregando...
-              </span>
-            </div>
-          )}
-
-          {hasMore && !isLoadingMore && displayedAppointments.length > 0 && (
-            <div className="flex justify-center py-6">
-              <Button variant="outline" onClick={loadMoreItems} className="">
-                Carregar mais
-              </Button>
-            </div>
-          )}
         </div>
 
-        <div className="md:hidden space-y-2">
-          {displayedAppointments.length > 0 ? (
-            displayedAppointments.map((appointment, index) => (
-              <AppointmentCard
-                key={appointment._id}
-                appointment={appointment}
-                index={index}
-              />
-            ))
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum agendamento encontrado.
+        <div className="flex items-center justify-between px-4">
+          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+            {table.getFilteredSelectedRowModel().rows.length} de{" "}
+            {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+          </div>
+          <div className="flex w-full items-center gap-8 lg:w-fit">
+            <div className="hidden items-center gap-2 lg:flex">
+              <Label htmlFor="rows-per-page" className="text-sm font-medium">
+                Linhas por página
+              </Label>
+              <Select
+                value={`${table.getState().pagination.pageSize}`}
+                onValueChange={(value) => {
+                  table.setPageSize(Number(value));
+                }}
+              >
+                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+                  <SelectValue
+                    placeholder={table.getState().pagination.pageSize}
+                  />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 40, 50].map((pageSize) => (
+                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-
-          {isLoadingMore && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
-              <span className="text-sm text-muted-foreground">
-                Carregando mais agendamentos...
-              </span>
+            <div className="flex w-fit items-center justify-center text-sm font-medium">
+              Página {table.getState().pagination.pageIndex + 1} de{" "}
+              {table.getPageCount()}
             </div>
-          )}
-
-          {hasMore && !isLoadingMore && displayedAppointments.length > 0 && (
-            <div className="flex justify-center py-4">
+            <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
                 variant="outline"
-                onClick={loadMoreItems}
-                className="w-full"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
               >
-                Carregar mais agendamentos
+                <span className="sr-only">Ir para primeira página</span>
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="size-8"
+                size="icon"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <span className="sr-only">Ir para página anterior</span>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="size-8"
+                size="icon"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <span className="sr-only">Ir para próxima página</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="hidden size-8 lg:flex"
+                size="icon"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                <span className="sr-only">Ir para última página</span>
+                <ChevronsRight className="h-4 w-4" />
               </Button>
             </div>
-          )}
-
-          <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Cancelar Agendamento</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tem certeza que deseja cancelar este agendamento?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel
-                  onClick={() => setIsModalOpen(false)}
-                  className="cursor-pointer"
-                >
-                  Manter agendamento
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleConfirmCancel}
-                  className="cursor-pointer"
-                >
-                  Sim, cancelar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          </div>
         </div>
-      </ScrollArea>
+      </div>
+
+      <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar Agendamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar este agendamento?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => setIsModalOpen(false)}
+              className="cursor-pointer"
+            >
+              Manter agendamento
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancel}
+              className="cursor-pointer"
+            >
+              Sim, cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

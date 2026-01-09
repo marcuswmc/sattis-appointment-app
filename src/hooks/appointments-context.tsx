@@ -32,7 +32,8 @@ export interface Appointment {
   time: string;
   status: string;
   customerName: string;
-  customerEmail: string; // Garantir que customerEmail está presente
+  customerEmail: string;
+  customerPhone: string;
   serviceId: Service;
   professionalId: Professional;
 }
@@ -43,7 +44,7 @@ type AppointmentsContextType = {
   services: Service[];
   professionals: Professional[];
   categories: Category[];
-  customerMissedStatus: Record<string, boolean>; // Novo: Mapa de email para status de falta
+  customerMissedStatus: Record<string, boolean>; 
   isLoading: boolean;
   fetchAppointments: (token: string | undefined, statuses?: string[]) => Promise<void>;
   fetchServicesAndProfessionals: (token: string | undefined) => Promise<void>;
@@ -232,13 +233,13 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
         services,
         professionals,
         categories,
-        customerMissedStatus, // Adicionado ao contexto
+        customerMissedStatus,
         isLoading,
         fetchAppointments,
         fetchServicesAndProfessionals,
         fetchCategories,
         setAppointments,
-        updateCustomerMissedStatus, // Adicionado ao contexto
+        updateCustomerMissedStatus,
       }}
     >
       {children}

@@ -5,13 +5,15 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/auth-provider";
 import { AppointmentsProvider } from "@/hooks/appointments-context";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Suspense } from "react";
+import Loading from "./loading";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Salon Management System",
-  description: "Professional appointment management for salons",
+  title: "Sattis App Admin",
+  description: "Backoffice Admin - Sattis App",
 };
 
 export default function RootLayout({
@@ -20,16 +22,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <body className={`${inter.className}`} suppressHydrationWarning>
-        <Suspense>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
           <AuthProvider>
             <AppointmentsProvider>
-              {children}
+              <Suspense
+                fallback={
+                  <Loading />
+                }
+              >
+                {children}
+              </Suspense>
               <Toaster />
             </AppointmentsProvider>
           </AuthProvider>
-        </Suspense>
+        </ThemeProvider>
       </body>
     </html>
   );

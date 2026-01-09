@@ -44,8 +44,6 @@ export function HistoryFilters({token}: HistoryFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
- 
-  const [isLoading, setIsLoading] = useState(true);
 
   const { services, professionals, fetchServicesAndProfessionals, fetchCategories } = useAppointments()
 
@@ -118,7 +116,7 @@ export function HistoryFilters({token}: HistoryFiltersProps) {
             locale={pt}
             selected={date}
             onSelect={setDate}
-            className="bg-white rounded-md"
+            className="rounded-md"
           />
         </PopoverContent>
       </Popover>
@@ -163,7 +161,7 @@ export function HistoryFilters({token}: HistoryFiltersProps) {
       <Button
         variant="outline"
         onClick={applyFilters}
-        className="flex items-center gap-2 bg-gray-950 text-gray-50 cursor-pointer w-full md:w-auto"
+        className="flex items-center gap-2  cursor-pointer w-full md:w-auto"
       >
         <Search className="h-4 w-4" />
         Filtrar
@@ -181,13 +179,13 @@ export function HistoryFilters({token}: HistoryFiltersProps) {
               variant="outline"
               className="w-full flex items-center justify-between"
             >
-              <span className="text-gray-500">
-                Busque por: data, serviço ou profissional..
+              <span className="text-muted-foreground">
+                Filtrar por data, serviço ou profissional..
               </span>
               <Filter className="h-6 w-6 text-gray-500" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="sm:rounded-t-lg bg-white p-4">
+          <SheetContent side="bottom" className="sm:rounded-t-lg p-4">
             <SheetHeader>
               <SheetTitle>Filtros</SheetTitle>
             </SheetHeader>
