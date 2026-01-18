@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { signIn } from "next-auth/react"
 import { Loader2 } from "lucide-react"
 
@@ -63,7 +63,9 @@ export function RegisterDialog({ open, onOpenChange }: RegisterDialogProps) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Crie a sua conta</DialogTitle>
-          <p>Preencha os campos para criar uma conta de acesso profissional ao sistema</p>
+          <DialogDescription>
+            Preencha os campos para criar uma conta de acesso profissional ao sistema
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-4">
           <div className="space-y-2">

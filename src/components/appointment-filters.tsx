@@ -26,6 +26,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { useAppointments } from "@/hooks/appointments-context";
 import { QuickFilter } from "./quick-filter";
@@ -119,7 +120,7 @@ export function AppointmentFilters({ token }: AppointmentFiltersProps) {
     router.push("/dashboard/appointments");
   };
 
-  const FiltersContent = (
+  const DesktopFiltersContent = (
     <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
       <QuickFilter setToday={setToday} setTomorrow={setTomorrow} date={date} />
       <Popover>
@@ -183,6 +184,60 @@ export function AppointmentFilters({ token }: AppointmentFiltersProps) {
     </div>
   );
 
+  const MobileFiltersContent = (
+    <div className="flex flex-col gap-4 w-full">
+      <QuickFilter setToday={setToday} setTomorrow={setTomorrow} date={date} />
+
+      <div className="space-y-2 flex flex-col w-full">
+        <label className="text-sm font-medium">Data</label>
+        <div className="w-full">
+          <Calendar
+            mode="single"
+            locale={pt}
+            selected={date}
+            onSelect={setDate}
+            className="w-full flex justify-center"
+          />
+        </div>
+      </div>
+
+      <Select value={service} onValueChange={setService}>
+        <SelectTrigger className="w-full cursor-pointer focus:outline-hidden">
+          <SelectValue placeholder="Serviço" />
+        </SelectTrigger>
+        <SelectContent>
+          {services.map((item) => (
+            <SelectItem key={item._id} value={item._id}>
+              {item.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={professional} onValueChange={setProfessional}>
+        <SelectTrigger className="w-full cursor-pointer">
+          <SelectValue placeholder="Profissional" />
+        </SelectTrigger>
+        <SelectContent>
+          {professionals.map((item) => (
+            <SelectItem key={item._id} value={item._id}>
+              {item.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Button
+        variant="outline"
+        onClick={applyFilters}
+        className="flex items-center gap-2 cursor-pointer w-full"
+      >
+        <Search className="h-4 w-4" />
+        Filtrar
+      </Button>
+    </div>
+  );
+
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       {/* Mobile: exibe o botão que abre o sheet */}
@@ -199,11 +254,14 @@ export function AppointmentFilters({ token }: AppointmentFiltersProps) {
               <Filter className="h-6 w-6 text-muted-foreground" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="sm:rounded-t-lg p-4">
+          <SheetContent side="right" className="p-4">
             <SheetHeader>
               <SheetTitle>Filtros</SheetTitle>
+              <SheetDescription>
+                Filtre as marcações por data, serviço ou profissional
+              </SheetDescription>
             </SheetHeader>
-            <div className="mt-2">{FiltersContent}</div>
+            <div className="mt-2">{MobileFiltersContent}</div>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onClick={clearFilters}>
                 <X className="h-6 w-6" />
@@ -216,7 +274,7 @@ export function AppointmentFilters({ token }: AppointmentFiltersProps) {
 
       {/* Desktop: exibe os filtros inline */}
       <div className="hidden md:flex w-full items-center justify-between">
-        {FiltersContent}
+        {DesktopFiltersContent}
         <Button
           variant="outline"
           onClick={clearFilters}
