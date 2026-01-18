@@ -226,22 +226,13 @@ export function AppointmentFilters({ token }: AppointmentFiltersProps) {
           ))}
         </SelectContent>
       </Select>
-
-      <Button
-        variant="outline"
-        onClick={applyFilters}
-        className="flex items-center gap-2 cursor-pointer w-full"
-      >
-        <Search className="h-4 w-4" />
-        Filtrar
-      </Button>
     </div>
   );
 
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       {/* Mobile: exibe o botão que abre o sheet */}
-      <div className="md:hidden w-full">
+      <div className="md:hidden">
         <Sheet>
           <SheetTrigger asChild>
             <Button
@@ -254,18 +245,30 @@ export function AppointmentFilters({ token }: AppointmentFiltersProps) {
               <Filter className="h-6 w-6 text-muted-foreground" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="p-4">
-            <SheetHeader>
-              <SheetTitle>Filtros</SheetTitle>
-              <SheetDescription>
-                Filtre as marcações por data, serviço ou profissional
-              </SheetDescription>
-            </SheetHeader>
-            <div className="mt-2">{MobileFiltersContent}</div>
-            <div className="mt-4 flex justify-end gap-2">
+          <SheetContent side="right" className="flex flex-col p-0">
+            <div className="p-4 pb-2">
+              <SheetHeader>
+                <SheetTitle>Filtros</SheetTitle>
+                <SheetDescription>
+                  Filtre as marcações por data, serviço ou profissional
+                </SheetDescription>
+              </SheetHeader>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4">
+              {MobileFiltersContent}
+            </div>
+            <div className="border-t p-4 pt-3 flex justify-end gap-2">
               <Button variant="outline" onClick={clearFilters}>
                 <X className="h-6 w-6" />
                 Limpar
+              </Button>
+              <Button
+                variant="default"
+                onClick={applyFilters}
+                className="flex items-center gap-2"
+              >
+                <Search className="h-4 w-4" />
+                Filtrar
               </Button>
             </div>
           </SheetContent>
